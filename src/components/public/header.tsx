@@ -11,7 +11,8 @@ import { Button } from "@/components/ui/button";
 
 export function Header() {
   const router = useRouter();
-  const { currentRole, currentUser } = usePortal();
+  const { user, profile } = usePortal();
+  const currentRole = profile?.role ?? (user ? 'author' : 'guest');
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
@@ -91,9 +92,9 @@ export function Header() {
                 </Button>
               </Link>
               <Link href="/author" className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors">
-                <Avatar src={currentUser?.avatar} name={currentUser?.name} size="md" />
+                <Avatar src={profile?.avatar_url ?? undefined} name={profile?.full_name ?? user?.email} size="md" />
                 <span className="hidden lg:inline text-xs font-semibold text-[#111827]">
-                  {currentUser?.name}
+                  {profile?.full_name ?? user?.email}
                 </span>
               </Link>
             </div>
@@ -106,9 +107,9 @@ export function Header() {
                 </Button>
               </Link>
               <Link href="/admin" className="flex items-center gap-2 p-1 rounded-full hover:bg-gray-100 transition-colors">
-                <Avatar src={currentUser?.avatar} name={currentUser?.name} size="md" />
+                <Avatar src={profile?.avatar_url ?? undefined} name={profile?.full_name ?? user?.email} size="md" />
                 <span className="hidden lg:inline text-xs font-semibold text-[#0B172A]">
-                  {currentUser?.name} (Admin)
+                  {profile?.full_name ?? user?.email} (Admin)
                 </span>
               </Link>
             </div>

@@ -1,12 +1,11 @@
-"use client";
-
 import React from "react";
 import Link from "next/link";
-import { usePortal } from "@/context/portal-context";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { StatCard } from "@/components/ui/stat-card";
 import { BadgeStatus } from "@/components/ui/badge-status";
 import { Button } from "@/components/ui/button";
-import { formatDate, formatNumber } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
 import {
   PenSquare,
   BookOpen,
@@ -17,12 +16,44 @@ import {
   ExternalLink,
 } from "lucide-react";
 
-export default function AuthorDashboardPage() {
-  const { posts, currentUser } = usePortal();
+export const dynamic = "force-dynamic";
 
-  // Filter posts belonging to author (Budi Santoso or current user)
-  const authorId = currentUser?.id || "user-author-1";
-  const authorPosts = posts.filter((p) => p.authorId === authorId);
+export default async function AuthorDashboardPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, role")
+    .eq("id", user.id)
+    .single();
+
+  const { data: rawPosts } = await supabase
+    .from("posts")
+    .select(`
+      id, title, slug, excerpt, cover_image_url, published_at, created_at, updated_at, view_count, status, rejection_note,
+      category_id, category:categories(id, name, slug)
+    `)
+    .eq("author_id", user.id)
+    .order("updated_at", { ascending: false });
+
+  const authorPosts = (rawPosts || []).map((p: any) => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    excerpt: p.excerpt || "",
+    status: p.status as "draft" | "pending" | "published" | "rejected",
+    rejectionNote: p.rejection_note,
+    updatedAt: p.updated_at || p.created_at,
+    viewCount: p.view_count || 0,
+    category: p.category || { id: "", name: "Umum", slug: "umum" },
+  }));
 
   const publishedCount = authorPosts.filter((p) => p.status === "published").length;
   const pendingCount = authorPosts.filter((p) => p.status === "pending").length;
@@ -30,7 +61,6 @@ export default function AuthorDashboardPage() {
   const rejectedCount = authorPosts.filter((p) => p.status === "rejected").length;
 
   const totalViews = authorPosts.reduce((acc, p) => acc + p.viewCount, 0);
-
   const recentPosts = authorPosts.slice(0, 5);
 
   return (
@@ -39,7 +69,7 @@ export default function AuthorDashboardPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-xs">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-[#111827] tracking-tight">
-            Halo, {currentUser?.name || "Budi Santoso"}! 👋
+            Halo, {profile?.full_name || user.email || "Penulis"}! 👋
           </h1>
           <p className="text-xs sm:text-sm text-[#6B7280] mt-1">
             Ruang kreasi dan publikasi naskah terbuka bagi seluruh mahasiswa UNTAG Banyuwangi bersama Redaksi UKM Pilar Bangsa.
@@ -54,7 +84,7 @@ export default function AuthorDashboardPage() {
         </Link>
       </div>
 
-      {/* 3-Column Stat Card Grid (§3.2 PRD & design.md) */}
+      {/* 3-Column Stat Card Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
         <StatCard
           label="Total Tulisan"
@@ -169,7 +199,7 @@ export default function AuthorDashboardPage() {
                         </Link>
                       ) : (
                         <Link
-                          href="/author/tulis"
+                          href={`/author/tulis?id=${post.id}`}
                           className="text-[#005AE0] hover:underline font-semibold"
                         >
                           Edit / Tinjau

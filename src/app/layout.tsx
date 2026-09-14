@@ -3,7 +3,6 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { PortalProvider } from "@/context/portal-context";
 import { ToastContainer } from "@/components/ui/toast";
-import { RolePreviewBar } from "@/components/ui/role-preview-bar";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -45,7 +44,6 @@ export default function RootLayout({
     <html lang="id" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-white text-[#111827]">
         <PortalProvider>
-          <RolePreviewBar />
           <div className="flex-1 flex flex-col">{children}</div>
           <ToastContainer />
         </PortalProvider>

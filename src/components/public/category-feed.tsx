@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Post, Category } from "@/lib/mock-data";
+import type { Post, Category } from "@/lib/types";
 import { CategoryBadge } from "@/components/ui/badge";
 import { TagChip } from "@/components/ui/tag-chip";
 import { formatDate, formatNumber } from "@/lib/utils";

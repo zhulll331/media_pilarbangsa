@@ -3,28 +3,63 @@
 import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { usePortal } from "@/context/portal-context";
+import { createClient } from "@/lib/supabase/client";
 import { TopUtilityBar } from "@/components/public/top-utility-bar";
 import { Header } from "@/components/public/header";
 import { Navbar } from "@/components/public/navbar";
 import { Footer } from "@/components/public/footer";
 import { CategoryBadge } from "@/components/ui/badge";
 import { formatDate, formatNumber } from "@/lib/utils";
-import { Search, ChevronRight, Eye, Calendar } from "lucide-react";
+import { Search, ChevronRight, Eye, Calendar, Loader2 } from "lucide-react";
+import type { Post, Category } from "@/lib/types";
 
 function SearchContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q") || "";
-  const { posts, categories } = usePortal();
 
   const [query, setQuery] = useState(initialQuery);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (initialQuery) {
-      setQuery(initialQuery);
-    }
+    if (initialQuery) setQuery(initialQuery);
   }, [initialQuery]);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      const supabase = createClient();
+
+      const [{ data: rawPosts }, { data: rawCategories }] = await Promise.all([
+        supabase
+          .from('posts')
+          .select(`id, title, slug, excerpt, cover_image_url, published_at, view_count,
+            author_id, author:profiles(id, full_name),
+            category_id, category:categories(id, name, slug)`)
+          .eq('status', 'published')
+          .order('published_at', { ascending: false }),
+        supabase.from('categories').select('id, name, slug').order('name'),
+      ]);
+
+      setPosts((rawPosts || []).map((p: any) => ({
+        id: p.id, title: p.title, slug: p.slug, excerpt: p.excerpt || '', content: '',
+        coverImage: p.cover_image_url || '',
+        authorId: p.author_id,
+        author: { id: p.author?.id || p.author_id, name: p.author?.full_name || 'Penulis UNTAG', avatar: null },
+        categoryId: p.category_id,
+        category: p.category || { id: '', name: 'Umum', slug: 'umum' },
+        tags: [], status: 'published' as const,
+        publishedAt: p.published_at, createdAt: p.published_at, updatedAt: p.published_at,
+        viewCount: p.view_count || 0,
+      })));
+
+      setCategories((rawCategories || []).map((c: any) => ({ id: c.id, name: c.name, slug: c.slug })));
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
 
   const filteredPosts = posts.filter((post) => {
     if (post.status !== "published") return false;
@@ -41,6 +76,14 @@ function SearchContent() {
 
     return matchesQuery && matchesCategory;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 className="w-8 h-8 animate-spin text-[#005AE0]" />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">

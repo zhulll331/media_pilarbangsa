@@ -1,8 +1,7 @@
-"use client";
-
-import React, { use } from "react";
+import React from "react";
 import Link from "next/link";
-import { usePortal } from "@/context/portal-context";
+import { notFound } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 import { TopUtilityBar } from "@/components/public/top-utility-bar";
 import { Header } from "@/components/public/header";
 import { Navbar } from "@/components/public/navbar";
@@ -10,27 +9,74 @@ import { Footer } from "@/components/public/footer";
 import { Avatar } from "@/components/ui/avatar";
 import { CategoryBadge } from "@/components/ui/badge";
 import { formatDate, formatNumber } from "@/lib/utils";
-import { MOCK_USERS } from "@/lib/mock-data";
-import { ChevronRight, Calendar, BookOpen, Eye, Award, Mail } from "lucide-react";
+import { ChevronRight, BookOpen, Eye } from "lucide-react";
+import type { Post } from "@/lib/types";
 
-export default function AuthorProfilePage({
+export const revalidate = 60;
+
+export default async function AuthorProfilePage({
   params,
 }: {
   params: Promise<{ username: string }>;
 }) {
-  const { username } = use(params);
-  const { posts } = usePortal();
+  const { username } = await params;
+  const supabase = await createClient();
 
-  // Match author by slugified username
-  const author =
-    MOCK_USERS.find(
-      (u) =>
-        u.name.toLowerCase().replace(/[^a-z0-9]+/g, "-") === username
-    ) || MOCK_USERS[1]; // fallback to Budi Santoso
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url, bio, role, created_at");
 
-  const authorPosts = posts.filter(
-    (p) => p.authorId === author.id && p.status === "published"
+  const authorProfile = (profiles || []).find(
+    (p) =>
+      p.id === username ||
+      (p.full_name && p.full_name.toLowerCase().replace(/[^a-z0-9]+/g, "-") === username)
   );
+
+  if (!authorProfile) {
+    notFound();
+  }
+
+  const { data: rawPosts } = await supabase
+    .from("posts")
+    .select(`
+      id, title, slug, excerpt, content, cover_image_url, published_at, view_count,
+      category_id, category:categories(id, name, slug),
+      post_tags(tag:tags(id, name, slug))
+    `)
+    .eq("author_id", authorProfile.id)
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+
+  const authorPosts: Post[] = (rawPosts || []).map((p: any) => {
+    const wordCount = (p.content || "").replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
+    return {
+      id: p.id,
+      title: p.title,
+      slug: p.slug,
+      excerpt: p.excerpt || "",
+      content: p.content || "",
+      coverImage: p.cover_image_url || "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200",
+      authorId: authorProfile.id,
+      author: {
+        id: authorProfile.id,
+        name: authorProfile.full_name || "Penulis UNTAG",
+        avatar: authorProfile.avatar_url || null,
+        bio: authorProfile.bio || null,
+        role: authorProfile.role || "author",
+        joinedAt: authorProfile.created_at,
+      },
+      categoryId: p.category_id,
+      category: p.category || { id: "", name: "Umum", slug: "umum" },
+      tags: (p.post_tags || []).map((pt: any) => pt.tag).filter(Boolean),
+      status: "published" as const,
+      publishedAt: p.published_at,
+      createdAt: p.published_at,
+      updatedAt: p.published_at,
+      viewCount: p.view_count || 0,
+      readTime: `${Math.max(1, Math.ceil(wordCount / 200))} mnt`,
+    };
+  });
+
   const totalViews = authorPosts.reduce((acc, p) => acc + p.viewCount, 0);
 
   return (
@@ -48,14 +94,14 @@ export default function AuthorProfilePage({
             <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
             <span>Penulis Mahasiswa</span>
             <ChevronRight className="w-3.5 h-3.5 text-gray-400" />
-            <span className="font-semibold text-[#111827]">{author.name}</span>
+            <span className="font-semibold text-[#111827]">{authorProfile.full_name || "Penulis"}</span>
           </nav>
 
           {/* Author Profile Header Box */}
           <div className="bg-[#F0F4F8] border border-[#E5E7EB] rounded-3xl p-6 sm:p-10 mb-10 flex flex-col md:flex-row items-start md:items-center gap-6 sm:gap-8">
             <Avatar
-              src={author.avatar}
-              name={author.name}
+              src={authorProfile.avatar_url}
+              name={authorProfile.full_name || "Penulis"}
               size="xl"
               className="w-24 h-24 sm:w-28 sm:h-28 text-2xl border-2 border-white shadow-md shrink-0"
             />
@@ -63,23 +109,26 @@ export default function AuthorProfilePage({
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-2 mb-2">
                 <span className="text-xs font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#005AE0] text-white">
-                  {author.role === "admin"
+                  {authorProfile.role === "admin"
                     ? "Editor / Redaksi"
-                    : author.role === "author"
+                    : authorProfile.role === "author"
                     ? "Penulis Mahasiswa"
                     : "Kontributor Terbuka"}
                 </span>
-                <span className="text-xs text-[#6B7280]">
-                  Bergabung sejak {formatDate(author.joinedAt)}
-                </span>
+                {authorProfile.created_at && (
+                  <span className="text-xs text-[#6B7280]">
+                    Bergabung sejak {formatDate(authorProfile.created_at)}
+                  </span>
+                )}
               </div>
 
               <h1 className="text-2xl sm:text-3xl font-bold text-[#111827] mb-2">
-                {author.name}
+                {authorProfile.full_name || "Penulis"}
               </h1>
 
               <p className="text-sm text-[#6B7280] leading-relaxed max-w-2xl mb-4">
-                {author.bio}
+                {authorProfile.bio ||
+                  "Penulis & Kontributor Mahasiswa Universitas 17 Agustus 1945 Banyuwangi • Media Karya Mahasiswa & UKM Pilar Bangsa."}
               </p>
 
               {/* Author Stats Row */}
@@ -99,7 +148,7 @@ export default function AuthorProfilePage({
           {/* Published Articles List */}
           <div className="mb-6">
             <h2 className="text-xl font-bold text-[#111827]">
-              Karya Tulis {author.name}
+              Karya Tulis {authorProfile.full_name || "Penulis"}
             </h2>
             <p className="text-xs text-[#6B7280] mt-0.5">
               Daftar naskah liputan, opini, dan karya sastra yang telah kurasi redaksi

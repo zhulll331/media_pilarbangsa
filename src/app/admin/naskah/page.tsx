@@ -1,9 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { usePortal } from "@/context/portal-context";
-import { Post } from "@/lib/mock-data";
+import { deletePost } from "@/actions/posts";
+import type { Post } from "@/lib/types";
 import { BadgeStatus, StatusVariant } from "@/components/ui/badge-status";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
@@ -15,27 +17,92 @@ import {
   History,
   Trash2,
   X,
-  Clock,
-  UserCheck,
+  Loader2,
 } from "lucide-react";
 
 export default function AdminAllArticlesPage() {
-  const { posts, deletePost } = usePortal();
-
+  const { showToast } = usePortal();
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState<"all" | StatusVariant>("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [auditPost, setAuditPost] = useState<Post | null>(null);
 
+  const fetchAllPosts = useCallback(async () => {
+    setLoading(true);
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("posts")
+      .select(`
+        id, title, slug, excerpt, content, cover_image_url, status,
+        published_at, created_at, updated_at, view_count, rejection_note,
+        author_id, author:profiles(id, full_name, avatar_url),
+        category_id, category:categories(id, name, slug)
+      `)
+      .order("updated_at", { ascending: false });
+
+    if (!error && data) {
+      setPosts(
+        data.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          slug: p.slug,
+          excerpt: p.excerpt || "",
+          content: p.content || "",
+          coverImage: p.cover_image_url || "",
+          authorId: p.author_id,
+          author: {
+            id: p.author?.id || p.author_id,
+            name: p.author?.full_name || "Penulis UNTAG",
+            avatar: p.author?.avatar_url || null,
+            email: "",
+          },
+          categoryId: p.category_id,
+          category: p.category || { id: "", name: "Umum", slug: "umum" },
+          tags: [],
+          status: (p.status === "pending_review" ? "pending" : p.status) as Post["status"],
+          publishedAt: p.published_at,
+          createdAt: p.created_at,
+          updatedAt: p.updated_at,
+          viewCount: p.view_count || 0,
+          rejectionNote: p.rejection_note,
+        }))
+      );
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchAllPosts();
+  }, [fetchAllPosts]);
+
+  const handleDelete = async (postId: string, title: string) => {
+    if (!confirm(`Hapus naskah "${title}" secara permanen dari portal?`)) return;
+    const result = await deletePost(postId);
+    if (result?.error) {
+      showToast(result.error, "error");
+    } else {
+      showToast("Naskah telah dihapus dari sistem.", "info");
+      await fetchAllPosts();
+    }
+  };
+
   const filteredPosts = posts.filter((post) => {
-    const matchesStatus =
-      selectedStatus === "all" || post.status === selectedStatus;
+    const matchesStatus = selectedStatus === "all" || post.status === selectedStatus;
     const matchesSearch =
       searchQuery.trim() === "" ||
       post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.author.name.toLowerCase().includes(searchQuery.toLowerCase());
-
     return matchesStatus && matchesSearch;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 className="w-8 h-8 animate-spin text-[#005AE0]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -54,12 +121,12 @@ export default function AdminAllArticlesPage() {
             Semua Naskah & Audit Trail ({posts.length})
           </h1>
           <p className="text-xs sm:text-sm text-[#6B7280]">
-            Katalog lengkap seluruh artikel, draf, dan riwayat kurasi Redaksi UKM Pilar Bangsa & Mahasiswa UNTAG Banyuwangi
+            Katalog lengkap seluruh artikel, draf, dan riwayat kurasi Redaksi UKM Pilar Bangsa
           </p>
         </div>
       </div>
 
-      {/* Filter & Search Bar */}
+      {/* Filter & Search */}
       <div className="bg-white p-4 rounded-2xl border border-[#E5E7EB] shadow-xs flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-1.5 overflow-x-auto w-full md:w-auto no-scrollbar">
           {[
@@ -125,7 +192,7 @@ export default function AdminAllArticlesPage() {
                         {post.title}
                       </span>
                       <span className="text-[11px] text-[#6B7280]">
-                        Slug: /{post.slug}
+                        /{post.slug}
                       </span>
                     </td>
 
@@ -156,11 +223,10 @@ export default function AdminAllArticlesPage() {
 
                     <td className="py-3.5 px-4 text-right whitespace-nowrap">
                       <div className="flex items-center justify-end gap-1.5">
-                        {/* Audit Trail Button */}
                         <button
                           onClick={() => setAuditPost(post)}
                           className="p-1.5 text-gray-500 hover:text-[#005AE0] rounded-md hover:bg-gray-100 transition-colors cursor-pointer"
-                          title="Lihat Riwayat Audit Status"
+                          title="Lihat Riwayat Status"
                         >
                           <History className="w-4 h-4" />
                         </button>
@@ -176,11 +242,7 @@ export default function AdminAllArticlesPage() {
                         )}
 
                         <button
-                          onClick={() => {
-                            if (confirm("Hapus naskah ini secara permanen dari portal?")) {
-                              deletePost(post.id);
-                            }
-                          }}
+                          onClick={() => handleDelete(post.id, post.title)}
                           className="p-1.5 text-gray-400 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors cursor-pointer"
                           title="Hapus Naskah"
                         >
@@ -196,7 +258,7 @@ export default function AdminAllArticlesPage() {
         </div>
       </div>
 
-      {/* Audit Trail Modal (§4 & §5.1 PRD - post_status_history) */}
+      {/* Audit Trail Modal */}
       {auditPost && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
@@ -204,33 +266,21 @@ export default function AdminAllArticlesPage() {
               <div className="flex items-center gap-2">
                 <History className="w-5 h-5 text-blue-400" />
                 <div>
-                  <h3 className="text-sm font-bold">
-                    Audit Trail Riwayat Status (§5.1 PRD)
-                  </h3>
-                  <span className="text-[11px] text-gray-300">
-                    Transparansi perubahan status naskah
-                  </span>
+                  <h3 className="text-sm font-bold">Riwayat Status Naskah</h3>
+                  <span className="text-[11px] text-gray-300">Transparansi perubahan status</span>
                 </div>
               </div>
-              <button
-                onClick={() => setAuditPost(null)}
-                className="p-1 text-gray-400 hover:text-white cursor-pointer"
-              >
+              <button onClick={() => setAuditPost(null)} className="p-1 text-gray-400 hover:text-white cursor-pointer">
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             <div className="p-6 space-y-4">
               <div className="pb-3 border-b border-[#E5E7EB]">
-                <h4 className="font-bold text-sm text-[#111827]">
-                  {auditPost.title}
-                </h4>
-                <span className="text-xs text-[#6B7280]">
-                  Penulis: {auditPost.author.name} ({auditPost.author.email})
-                </span>
+                <h4 className="font-bold text-sm text-[#111827]">{auditPost.title}</h4>
+                <span className="text-xs text-[#6B7280]">Penulis: {auditPost.author.name}</span>
               </div>
 
-              {/* Timeline of Status Changes */}
               <div className="space-y-4 pl-2 border-l-2 border-blue-200 ml-2">
                 <div className="relative pl-4">
                   <div className="absolute -left-[23px] top-0.5 w-3 h-3 rounded-full bg-[#005AE0] ring-4 ring-white" />
@@ -238,7 +288,7 @@ export default function AdminAllArticlesPage() {
                     Status Terkini: {auditPost.status.toUpperCase()}
                   </span>
                   <span className="text-[11px] text-[#6B7280] block">
-                    {formatDate(auditPost.updatedAt)} • Diperbarui oleh Pemimpin Redaksi
+                    {formatDate(auditPost.updatedAt)}
                   </span>
                   {auditPost.rejectionNote && (
                     <div className="mt-2 p-2.5 rounded-lg bg-red-50 text-xs text-red-900 border border-red-200">
@@ -249,21 +299,15 @@ export default function AdminAllArticlesPage() {
 
                 <div className="relative pl-4">
                   <div className="absolute -left-[23px] top-0.5 w-3 h-3 rounded-full bg-gray-400 ring-4 ring-white" />
-                  <span className="text-xs font-bold text-[#111827] block">
-                    Naskah Dibuat
-                  </span>
+                  <span className="text-xs font-bold text-[#111827] block">Naskah Dibuat</span>
                   <span className="text-[11px] text-[#6B7280]">
-                    {formatDate(auditPost.createdAt)} • Diinisialisasi oleh {auditPost.author.name}
+                    {formatDate(auditPost.createdAt)} • {auditPost.author.name}
                   </span>
                 </div>
               </div>
 
               <div className="pt-4 flex justify-end">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setAuditPost(null)}
-                >
+                <Button variant="secondary" size="sm" onClick={() => setAuditPost(null)}>
                   Tutup Riwayat
                 </Button>
               </div>

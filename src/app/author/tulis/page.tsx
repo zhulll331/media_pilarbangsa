@@ -1,38 +1,99 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 import { usePortal } from "@/context/portal-context";
 import { Button } from "@/components/ui/button";
-import { TagChip } from "@/components/ui/tag-chip";
 import {
   ArrowLeft,
   Save,
   Send,
   CheckCircle2,
-  AlertTriangle,
   Upload,
+  Loader2,
 } from "lucide-react";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { uploadCoverImage } from "@/actions/profile";
+import { createDraft, updateDraft, submitForReview } from "@/actions/posts";
+import type { Category, Tag } from "@/lib/types";
 
-export default function AuthorEditorPage() {
+function AuthorEditorContent() {
   const router = useRouter();
-  const { categories, tags, saveDraft, submitForReview, showToast } = usePortal();
+  const searchParams = useSearchParams();
+  const postIdParam = searchParams.get("id");
 
+  const { showToast } = usePortal();
+
+  const [currentPostId, setCurrentPostId] = useState<string | null>(postIdParam);
   const [title, setTitle] = useState("");
   const [excerpt, setExcerpt] = useState("");
   const [content, setContent] = useState("");
-  const [categoryId, setCategoryId] = useState(categories[0]?.id || "cat-berita");
-  const [selectedTags, setSelectedTags] = useState<string[]>([tags[0]?.id || "tag-1"]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [tags, setTags] = useState<Tag[]>([]);
+  const [categoryId, setCategoryId] = useState("");
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [coverImage, setCoverImage] = useState(
     "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=1200&auto=format&fit=crop&q=80"
   );
-  const [lastSaved, setLastSaved] = useState<string>("Baru saja");
+  const [lastSaved, setLastSaved] = useState<string>("Belum disimpan");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingPost, setIsLoadingPost] = useState(false);
 
-  // Client-side image limit simulation and upload to Supabase Storage
+  // Load Categories & Tags
+  useEffect(() => {
+    const fetchTaxonomies = async () => {
+      const supabase = createClient();
+      const [catRes, tagRes] = await Promise.all([
+        supabase.from("categories").select("id, name, slug").order("name"),
+        supabase.from("tags").select("id, name, slug").order("name"),
+      ]);
+
+      if (catRes.data && catRes.data.length > 0) {
+        setCategories(catRes.data as Category[]);
+        setCategoryId(catRes.data[0].id);
+      }
+      if (tagRes.data) {
+        setTags(tagRes.data as Tag[]);
+      }
+    };
+    fetchTaxonomies();
+  }, []);
+
+  // Load existing post if editing
+  useEffect(() => {
+    if (!postIdParam) return;
+    const fetchPost = async () => {
+      setIsLoadingPost(true);
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from("posts")
+        .select(`
+          id, title, excerpt, content, cover_image_url, category_id,
+          post_tags(tag_id)
+        `)
+        .eq("id", postIdParam)
+        .single();
+
+      if (!error && data) {
+        setTitle(data.title || "");
+        setExcerpt(data.excerpt || "");
+        setContent(data.content || "");
+        if (data.cover_image_url) setCoverImage(data.cover_image_url);
+        if (data.category_id) setCategoryId(data.category_id);
+        if (data.post_tags) {
+          setSelectedTags(data.post_tags.map((pt: any) => pt.tag_id));
+        }
+        setLastSaved("Tersimpan di sistem");
+      }
+      setIsLoadingPost(false);
+    };
+    fetchPost();
+  }, [postIdParam]);
+
+  // Upload Cover Image to Supabase Storage
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -49,16 +110,16 @@ export default function AuthorEditorPage() {
       const res = await uploadCoverImage(formData);
       if (res.success && res.publicUrl) {
         setCoverImage(res.publicUrl);
-        showToast("Gambar sampul berhasil diunggah ke storage!", "success");
+        showToast("Gambar sampul berhasil diunggah!", "success");
         return;
       }
     } catch {
-      // Fallback ke object URL jika storage belum dikonfigurasi
+      // Fallback
     }
 
     const objectUrl = URL.createObjectURL(file);
     setCoverImage(objectUrl);
-    showToast("Gambar sampul berhasil dipilih!", "success");
+    showToast("Gambar sampul dipilih.", "success");
   };
 
   const handleSaveDraft = async () => {
@@ -67,16 +128,46 @@ export default function AuthorEditorPage() {
       return;
     }
 
-    await saveDraft({
-      title,
-      excerpt,
-      content,
-      categoryId,
-      coverImage,
-      tags: tags.filter((t) => selectedTags.includes(t.id)),
-    });
-
-    setLastSaved(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }));
+    setIsSaving(true);
+    try {
+      if (currentPostId) {
+        const res = await updateDraft(currentPostId, {
+          title,
+          excerpt,
+          content,
+          categoryId: categoryId || undefined,
+          coverImage,
+          tagIds: selectedTags,
+        });
+        if (res?.error) {
+          showToast(res.error, "error");
+        } else {
+          showToast("Draf berhasil diperbarui!", "success");
+          setLastSaved(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }));
+        }
+      } else {
+        const res = await createDraft({
+          title,
+          excerpt,
+          content,
+          categoryId: categoryId || undefined,
+          coverImage,
+          tagIds: selectedTags,
+        });
+        if (res?.error) {
+          showToast(res.error, "error");
+        } else if (res?.post) {
+          setCurrentPostId(res.post.id);
+          window.history.replaceState(null, "", `/author/tulis?id=${res.post.id}`);
+          showToast("Draf berhasil dibuat!", "success");
+          setLastSaved(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }));
+        }
+      }
+    } catch (err: any) {
+      showToast(err.message || "Gagal menyimpan draf.", "error");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleSubmitForReview = async () => {
@@ -90,32 +181,72 @@ export default function AuthorEditorPage() {
     }
 
     setIsSubmitting(true);
-    await submitForReview({
-      title,
-      excerpt: excerpt || title,
-      content,
-      categoryId,
-      coverImage,
-      tags: tags.filter((t) => selectedTags.includes(t.id)),
-    });
+    try {
+      let targetPostId = currentPostId;
 
-    setTimeout(() => {
+      if (!targetPostId) {
+        const createRes = await createDraft({
+          title,
+          excerpt: excerpt || title,
+          content,
+          categoryId: categoryId || undefined,
+          coverImage,
+          tagIds: selectedTags,
+        });
+        if (createRes?.error || !createRes?.post) {
+          showToast(createRes?.error || "Gagal membuat draf.", "error");
+          setIsSubmitting(false);
+          return;
+        }
+        targetPostId = createRes.post.id;
+      } else {
+        await updateDraft(targetPostId, {
+          title,
+          excerpt: excerpt || title,
+          content,
+          categoryId: categoryId || undefined,
+          coverImage,
+          tagIds: selectedTags,
+        });
+      }
+
+      if (!targetPostId) {
+        showToast("ID Naskah tidak valid.", "error");
+        setIsSubmitting(false);
+        return;
+      }
+
+      const submitRes = await submitForReview(targetPostId);
+      if (submitRes?.error) {
+        showToast(submitRes.error, "error");
+        setIsSubmitting(false);
+      } else {
+        showToast("Naskah berhasil diajukan untuk ditinjau redaksi!", "success");
+        setTimeout(() => {
+          router.push("/author/tulisan");
+        }, 500);
+      }
+    } catch (err: any) {
+      showToast(err.message || "Gagal mengajukan naskah.", "error");
       setIsSubmitting(false);
-      router.push("/author/tulisan");
-    }, 600);
+    }
   };
 
   const toggleTag = (tagId: string) => {
     if (selectedTags.includes(tagId)) {
-      if (selectedTags.length > 1) {
-        setSelectedTags(selectedTags.filter((id) => id !== tagId));
-      }
+      setSelectedTags(selectedTags.filter((id) => id !== tagId));
     } else {
       setSelectedTags([...selectedTags, tagId]);
     }
   };
 
-
+  if (isLoadingPost) {
+    return (
+      <div className="flex items-center justify-center py-32">
+        <Loader2 className="w-8 h-8 animate-spin text-[#005AE0]" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 max-w-5xl mx-auto pb-16">
@@ -136,21 +267,26 @@ export default function AuthorEditorPage() {
             <div className="flex items-center gap-2 text-xs text-[#6B7280]">
               <span className="flex items-center gap-1 text-[#059669]">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Otomatis tersimpan {lastSaved}</span>
+                <span>{lastSaved}</span>
               </span>
             </div>
           </div>
         </div>
 
-        {/* Action Buttons: Simpan Draft (secondary) + Kirim ke Editor (primary) */}
+        {/* Action Buttons: Simpan Draft + Kirim ke Editor */}
         <div className="flex items-center gap-2.5">
           <Button
             variant="secondary"
             size="sm"
             onClick={handleSaveDraft}
+            disabled={isSaving || isSubmitting}
             className="gap-1.5"
           >
-            <Save className="w-4 h-4" />
+            {isSaving ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
             <span>Simpan Draf</span>
           </Button>
 
@@ -158,10 +294,14 @@ export default function AuthorEditorPage() {
             variant="primary"
             size="sm"
             onClick={handleSubmitForReview}
-            disabled={isSubmitting}
+            disabled={isSubmitting || isSaving}
             className="gap-1.5"
           >
-            <Send className="w-4 h-4" />
+            {isSubmitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
             <span>Kirim ke Editor</span>
           </Button>
         </div>
@@ -200,7 +340,7 @@ export default function AuthorEditorPage() {
 
         {/* Right: Metadata, Cover, & Settings (4 cols) */}
         <div className="lg:col-span-4 space-y-5">
-          {/* Cover Image Box with 2MB Limit Validation */}
+          {/* Cover Image Box */}
           <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] shadow-xs space-y-3">
             <span className="text-xs font-bold uppercase tracking-wider text-[#111827] block">
               Foto Sampul Artikel
@@ -226,7 +366,7 @@ export default function AuthorEditorPage() {
                 />
               </label>
               <span className="text-[10px] text-[#6B7280] block text-center mt-1.5">
-                Batas 2MB sesuai §5.3 PRD guna menghemat kuota cloud storage.
+                Batas 2MB sesuai ketentuan untuk performa optimal.
               </span>
             </div>
           </div>
@@ -249,7 +389,7 @@ export default function AuthorEditorPage() {
             </select>
           </div>
 
-          {/* Excerpt Input (for SEO & meta description) */}
+          {/* Excerpt Input */}
           <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] shadow-xs space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs font-bold uppercase tracking-wider text-[#111827]">
@@ -294,5 +434,19 @@ export default function AuthorEditorPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthorEditorPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center py-32">
+          <Loader2 className="w-8 h-8 animate-spin text-[#005AE0]" />
+        </div>
+      }
+    >
+      <AuthorEditorContent />
+    </Suspense>
   );
 }

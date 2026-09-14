@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Post } from "@/lib/mock-data";
+import type { Post } from "@/lib/types";
 import { CategoryBadge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
 import { Sparkles, ArrowRight } from "lucide-react";

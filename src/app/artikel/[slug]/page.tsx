@@ -1,10 +1,7 @@
-"use client";
-
-import React, { use, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { usePortal } from "@/context/portal-context";
-import { incrementViewCount } from "@/actions/posts";
+import { createClient } from "@/lib/supabase/server";
 import { TopUtilityBar } from "@/components/public/top-utility-bar";
 import { Header } from "@/components/public/header";
 import { Navbar } from "@/components/public/navbar";
@@ -15,73 +12,129 @@ import { Avatar } from "@/components/ui/avatar";
 import { ShareBar } from "@/components/ui/share-bar";
 import { CommentsSection } from "@/components/public/comments-section";
 import { RelatedArticles } from "@/components/public/related-articles";
+import { ViewCounter } from "@/components/public/view-counter";
 import { formatDate, formatNumber } from "@/lib/utils";
-import { ChevronRight, Clock, Eye, Calendar, UserCheck } from "lucide-react";
+import { ChevronRight, Clock, Eye, Calendar } from "lucide-react";
+import type { Post } from "@/lib/types";
 
-export default function ArticleDetailPage({
+export const revalidate = 60;
+
+export default async function ArticleDetailPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const { slug } = use(params);
-  const { posts, getPostBySlug } = usePortal();
+  const { slug } = await params;
+  const supabase = await createClient();
 
-  const post = getPostBySlug(slug);
+  const { data: rawPost } = await supabase
+    .from("posts")
+    .select(`
+      id, title, slug, excerpt, content, cover_image_url, published_at, created_at, updated_at, view_count,
+      author_id, author:profiles(id, full_name, avatar_url, bio, created_at, role),
+      category_id, category:categories(id, name, slug),
+      post_tags(tag:tags(id, name, slug))
+    `)
+    .eq("slug", slug)
+    .single();
 
-  useEffect(() => {
-    if (post && post.id && !post.id.startsWith("post-")) {
-      incrementViewCount(post.id);
-    }
-  }, [post?.id]);
-
-  if (!post) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <TopUtilityBar />
-        <Header />
-        <Navbar />
-        <main className="flex-1 flex flex-col items-center justify-center p-8 text-center">
-          <h1 className="text-2xl font-bold text-[#111827] mb-2">
-            Artikel Tidak Ditemukan
-          </h1>
-          <p className="text-sm text-[#6B7280] mb-6">
-            Naskah yang Anda cari mungkin telah dipindahkan atau belum dipublikasikan.
-          </p>
-          <Link
-            href="/"
-            className="px-5 py-2.5 rounded-full bg-[#005AE0] text-white text-sm font-semibold hover:bg-[#0048b3] transition-colors"
-          >
-            Kembali ke Beranda
-          </Link>
-        </main>
-        <Footer />
-      </div>
-    );
+  if (!rawPost) {
+    notFound();
   }
 
-  // Split content into paragraphs for Drop Cap styling on the first paragraph
+  const wordCount = (rawPost.content || "").replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length;
+  const readTime = `${Math.max(1, Math.ceil(wordCount / 200))} mnt`;
+
+  const p = rawPost as any;
+  const authorData = Array.isArray(p.author) ? p.author[0] : p.author;
+  const categoryData = Array.isArray(p.category) ? p.category[0] : p.category;
+
+  const post: Post = {
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    excerpt: p.excerpt || "",
+    content: p.content || "",
+    coverImage: p.cover_image_url || "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200",
+    authorId: p.author_id,
+    author: {
+      id: authorData?.id || p.author_id,
+      name: authorData?.full_name || "Redaksi Pilar Bangsa",
+      avatar: authorData?.avatar_url || null,
+      bio: authorData?.bio || null,
+      role: authorData?.role || "author",
+      joinedAt: authorData?.created_at || p.created_at,
+    },
+    categoryId: p.category_id,
+    category: categoryData || { id: "", name: "Umum", slug: "umum" },
+    tags: (p.post_tags || []).map((pt: any) => pt.tag).filter(Boolean),
+    status: "published",
+    publishedAt: p.published_at,
+    createdAt: p.created_at,
+    updatedAt: p.updated_at,
+    viewCount: p.view_count || 0,
+    readTime,
+  };
+
+  const { data: rawRelated } = await supabase
+    .from("posts")
+    .select(`
+      id, title, slug, excerpt, cover_image_url, published_at, view_count,
+      author_id, author:profiles(id, full_name, avatar_url),
+      category_id, category:categories(id, name, slug),
+      post_tags(tag:tags(id, name, slug))
+    `)
+    .eq("status", "published")
+    .neq("id", rawPost.id)
+    .order("published_at", { ascending: false })
+    .limit(6);
+
+  const relatedPosts: Post[] = (rawRelated || []).map((p: any) => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    excerpt: p.excerpt || "",
+    content: "",
+    coverImage: p.cover_image_url || "",
+    authorId: p.author_id,
+    author: {
+      id: p.author?.id || p.author_id,
+      name: p.author?.full_name || "Penulis UNTAG",
+      avatar: p.author?.avatar_url || null,
+    },
+    categoryId: p.category_id,
+    category: p.category || { id: "", name: "Umum", slug: "umum" },
+    tags: (p.post_tags || []).map((pt: any) => pt.tag).filter(Boolean),
+    status: "published" as const,
+    publishedAt: p.published_at,
+    createdAt: p.published_at,
+    updatedAt: p.published_at,
+    viewCount: p.view_count || 0,
+  }));
+
   const paragraphs = post.content.split("\n\n").filter((p) => p.trim());
 
   const jsonLd = {
     "@context": "https://schema.org",
     "@type": "NewsArticle",
-    "headline": post.title,
-    "description": post.excerpt,
-    "image": [post.coverImage],
-    "datePublished": post.publishedAt || post.createdAt,
-    "dateModified": post.updatedAt,
-    "author": {
+    headline: post.title,
+    description: post.excerpt,
+    image: [post.coverImage],
+    datePublished: post.publishedAt || post.createdAt,
+    dateModified: post.updatedAt,
+    author: {
       "@type": "Person",
-      "name": post.author.name,
+      name: post.author.name,
     },
-    "publisher": {
+    publisher: {
       "@type": "Organization",
-      "name": "Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa",
+      name: "Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa",
     },
   };
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
+      <ViewCounter postId={post.id} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -92,7 +145,7 @@ export default function ArticleDetailPage({
 
       <main className="flex-1 py-8">
         <div className="max-w-7xl mx-auto px-4">
-          {/* Breadcrumbs: Home > Kategori > Judul */}
+          {/* Breadcrumbs */}
           <nav aria-label="Breadcrumb" className="mb-6 flex items-center gap-2 text-xs text-[#6B7280]">
             <Link href="/" className="hover:text-[#005AE0] transition-colors">
               Beranda
@@ -110,11 +163,10 @@ export default function ArticleDetailPage({
             </span>
           </nav>
 
-          {/* 12-Column Grid: 8 (Article Content) + 4 (Sticky Sidebar) */}
+          {/* 12-Column Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
-            {/* Main Article Column (8 cols) */}
+            {/* Main Article Column */}
             <article className="lg:col-span-8">
-              {/* Category Badge & Metadata */}
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <CategoryBadge>{post.category.name}</CategoryBadge>
                 <div className="flex items-center gap-3 text-xs text-[#6B7280]">
@@ -135,12 +187,10 @@ export default function ArticleDetailPage({
                 </div>
               </div>
 
-              {/* Article Headline (H1) */}
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#111827] tracking-tight leading-[1.25] mb-6">
                 {post.title}
               </h1>
 
-              {/* Author Byline & Share Bar Row */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-y border-[#E5E7EB] mb-8">
                 <Link
                   href={`/penulis/${post.author.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
@@ -157,7 +207,9 @@ export default function ArticleDetailPage({
                       {post.author.name}
                     </span>
                     <span className="text-xs text-[#6B7280]">
-                      {post.author.role === "admin" ? "Editor / Redaksi UKM Pilar Bangsa" : "Penulis Mahasiswa UNTAG Banyuwangi"}
+                      {post.author.role === "admin"
+                        ? "Editor / Redaksi UKM Pilar Bangsa"
+                        : "Penulis Mahasiswa UNTAG Banyuwangi"}
                     </span>
                   </div>
                 </Link>
@@ -165,7 +217,7 @@ export default function ArticleDetailPage({
                 <ShareBar title={post.title} />
               </div>
 
-              {/* Featured Cover Image */}
+              {/* Cover Image */}
               <div className="rounded-2xl overflow-hidden mb-8 shadow-xs border border-[#E5E7EB] bg-gray-100">
                 <img
                   src={post.coverImage}
@@ -177,7 +229,7 @@ export default function ArticleDetailPage({
                 </div>
               </div>
 
-              {/* Article Body Content (8-column centered max 65ch with Drop Cap) */}
+              {/* Article Content */}
               {/<[a-z][\s\S]*>/i.test(post.content) ? (
                 <div
                   className="max-w-[65ch] drop-cap text-[#111827] text-base sm:text-[17px] leading-[1.8] tiptap ProseMirror"
@@ -191,21 +243,23 @@ export default function ArticleDetailPage({
                 </div>
               )}
 
-              {/* Tags Section */}
-              <div className="mt-10 pt-6 border-t border-[#E5E7EB]">
-                <span className="text-xs font-bold uppercase tracking-wider text-[#6B7280] block mb-2.5">
-                  Topik Terkait:
-                </span>
-                <div className="flex flex-wrap items-center gap-2">
-                  {post.tags.map((tag) => (
-                    <TagChip key={tag.id} href={`/tag/${tag.slug}`}>
-                      {tag.name}
-                    </TagChip>
-                  ))}
+              {/* Tags */}
+              {post.tags && post.tags.length > 0 && (
+                <div className="mt-10 pt-6 border-t border-[#E5E7EB]">
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#6B7280] block mb-2.5">
+                    Topik Terkait:
+                  </span>
+                  <div className="flex flex-wrap items-center gap-2">
+                    {post.tags.map((tag) => (
+                      <TagChip key={tag.id} href={`/tag/${tag.slug}`}>
+                        {tag.name}
+                      </TagChip>
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* Bottom Share Bar */}
+              {/* Share Box */}
               <div className="mt-6 p-4 rounded-xl bg-[#F0F4F8] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <span className="text-xs font-semibold text-[#111827]">
                   Sukai tulisan ini? Bagikan kepada rekan mahasiswa lainnya:
@@ -213,7 +267,7 @@ export default function ArticleDetailPage({
                 <ShareBar title={post.title} />
               </div>
 
-              {/* Author Bio Box */}
+              {/* Author Box */}
               <div className="mt-10 p-6 rounded-2xl border border-[#E5E7EB] bg-white flex flex-col sm:flex-row items-start gap-4">
                 <Avatar
                   src={post.author.avatar}
@@ -226,18 +280,22 @@ export default function ArticleDetailPage({
                     <span className="text-xs font-bold uppercase tracking-wider text-[#005AE0]">
                       Tentang Penulis
                     </span>
-                    <span className="text-gray-300">•</span>
-                    <span className="text-xs text-[#6B7280]">
-                      Bergabung sejak {formatDate(post.author.joinedAt)}
-                    </span>
+                    {post.author.joinedAt && (
+                      <>
+                        <span className="text-gray-300">•</span>
+                        <span className="text-xs text-[#6B7280]">
+                          Bergabung sejak {formatDate(post.author.joinedAt)}
+                        </span>
+                      </>
+                    )}
                   </div>
                   <h3 className="text-base font-bold text-[#111827] mb-1.5">
                     {post.author.name}
                   </h3>
-                    <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-3">
-                      {post.author.bio ||
-                        "Penulis & Kontributor Mahasiswa Universitas 17 Agustus 1945 Banyuwangi • Media Karya Mahasiswa & UKM Pilar Bangsa."}
-                    </p>
+                  <p className="text-xs sm:text-sm text-[#6B7280] leading-relaxed mb-3">
+                    {post.author.bio ||
+                      "Penulis & Kontributor Mahasiswa Universitas 17 Agustus 1945 Banyuwangi • Media Karya Mahasiswa & UKM Pilar Bangsa."}
+                  </p>
                   <Link
                     href={`/penulis/${post.author.name.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}
                     className="text-xs font-semibold text-[#005AE0] hover:underline inline-flex items-center gap-1"
@@ -248,16 +306,16 @@ export default function ArticleDetailPage({
                 </div>
               </div>
 
-              {/* Reader Comments Section */}
+              {/* Comments */}
               <CommentsSection postId={post.id} />
             </article>
 
-            {/* Sticky Sidebar: Related Articles (4 cols) */}
+            {/* Sidebar */}
             <div className="lg:col-span-4 w-full">
               <RelatedArticles
                 currentPostId={post.id}
                 categoryId={post.categoryId}
-                posts={posts}
+                posts={relatedPosts}
               />
             </div>
           </div>

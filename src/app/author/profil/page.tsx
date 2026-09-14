@@ -1,23 +1,27 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { usePortal } from "@/context/portal-context";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "@/lib/utils";
 import { updateProfile, uploadAvatar } from "@/actions/profile";
-import { Save, User, Mail, BookOpen, Upload } from "lucide-react";
+import { Save, Upload, Loader2 } from "lucide-react";
 
 export default function AuthorProfileSettingsPage() {
-  const { currentUser, showToast } = usePortal();
+  const { user, profile, showToast } = usePortal();
 
-  const [name, setName] = useState(currentUser?.name || "Budi Santoso");
-  const [bio, setBio] = useState(
-    currentUser?.bio ||
-      "Reporter Redaksi Pilar Bangsa. Mahasiswa Teknik Informatika yang jatuh cinta pada narasi jurnalisme data."
-  );
-  const [avatarUrl, setAvatarUrl] = useState(currentUser?.avatar);
+  const [name, setName] = useState("");
+  const [bio, setBio] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (profile) {
+      setName(profile.full_name || "");
+      setBio(profile.bio || "");
+      setAvatarUrl(profile.avatar_url);
+    }
+  }, [profile]);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -51,13 +55,13 @@ export default function AuthorProfileSettingsPage() {
     setIsSaving(true);
     try {
       const res = await updateProfile({ fullName: name, bio });
-      if (res.error) {
+      if (res?.error) {
         showToast(res.error, "error");
       } else {
         showToast("Profil penulis berhasil diperbarui!", "success");
       }
     } catch (err: any) {
-      showToast("Profil penulis berhasil diperbarui!", "success");
+      showToast(err.message || "Gagal memperbarui profil.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -79,8 +83,8 @@ export default function AuthorProfileSettingsPage() {
           {/* Avatar Section */}
           <div className="flex items-center gap-5 pb-6 border-b border-[#E5E7EB]">
             <Avatar
-              src={avatarUrl || currentUser?.avatar}
-              name={name}
+              src={avatarUrl}
+              name={name || user?.email || "Penulis"}
               size="xl"
               className="w-20 h-20 border-2 border-gray-200"
             />
@@ -125,7 +129,7 @@ export default function AuthorProfileSettingsPage() {
               </label>
               <input
                 type="email"
-                value={currentUser?.email || "budi.santoso@student.untag-bwi.ac.id"}
+                value={user?.email || ""}
                 disabled
                 className="w-full p-2.5 bg-gray-100 text-xs sm:text-sm text-gray-500 rounded-xl border border-[#E5E7EB] cursor-not-allowed"
               />
@@ -147,8 +151,18 @@ export default function AuthorProfileSettingsPage() {
           </div>
 
           <div className="pt-2 flex justify-end">
-            <Button variant="primary" size="md" type="submit" className="gap-2">
-              <Save className="w-4 h-4" />
+            <Button
+              variant="primary"
+              size="md"
+              type="submit"
+              disabled={isSaving}
+              className="gap-2"
+            >
+              {isSaving ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Save className="w-4 h-4" />
+              )}
               <span>Simpan Perubahan Profil</span>
             </Button>
           </div>

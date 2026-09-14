@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Post } from "@/lib/mock-data";
+import type { Post } from "@/lib/types";
 import { CategoryBadge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { formatDate, formatNumber } from "@/lib/utils";

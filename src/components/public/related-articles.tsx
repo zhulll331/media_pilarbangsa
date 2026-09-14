@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Post } from "@/lib/mock-data";
+import type { Post } from "@/lib/types";
 import { formatDate } from "@/lib/utils";
 import { BookOpen } from "lucide-react";
 

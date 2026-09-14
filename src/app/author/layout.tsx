@@ -24,15 +24,12 @@ export default function AuthorLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { currentUser, setRole, signOut } = usePortal();
+  const { profile, user, signOut } = usePortal();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const author = currentUser || {
-    name: "Budi Santoso",
-    email: "budi@student.untag-bwi.ac.id",
-    avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-    role: "author" as const,
-  };
+  const authorName = profile?.full_name ?? user?.email ?? 'Penulis UNTAG';
+  const authorEmail = user?.email ?? '';
+  const authorAvatar = profile?.avatar_url ?? undefined;
 
   const navLinks = [
     {
@@ -143,13 +140,13 @@ export default function AuthorLayout({
           </Link>
 
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-[#F0F4F8]">
-            <Avatar src={author.avatar} name={author.name} size="sm" />
+            <Avatar src={authorAvatar} name={authorName} size="sm" />
             <div className="flex-1 min-w-0">
               <span className="text-xs font-bold text-[#111827] block truncate">
-                {author.name}
+                {authorName}
               </span>
               <span className="text-[10px] text-[#6B7280] block truncate">
-                {author.email}
+                {authorEmail}
               </span>
             </div>
             <button

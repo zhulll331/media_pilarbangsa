@@ -1,54 +1,151 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/client";
 import { usePortal } from "@/context/portal-context";
+import { addComment } from "@/actions/comments";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/utils";
-import { MessageSquare, Reply, CornerDownRight, LogIn, AlertCircle } from "lucide-react";
+import {
+  MessageSquare,
+  Reply,
+  CornerDownRight,
+  LogIn,
+  AlertCircle,
+  Loader2,
+} from "lucide-react";
+
+interface CommentItem {
+  id: string;
+  postId: string;
+  parentId: string | null;
+  content: string;
+  userName: string;
+  userAvatar: string | null;
+  createdAt: string;
+  replies?: CommentItem[];
+}
 
 interface CommentsSectionProps {
   postId: string;
 }
 
 export function CommentsSection({ postId }: CommentsSectionProps) {
-  const { comments, addComment, currentRole, currentUser, showToast } = usePortal();
+  const { user, profile, showToast } = usePortal();
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [newComment, setNewComment] = useState("");
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [replyContent, setReplyContent] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const postComments = comments.filter((c) => c.postId === postId && c.status === "visible");
-  const totalCount = postComments.reduce(
-    (acc, c) => acc + 1 + (c.replies ? c.replies.filter((r) => r.status === "visible").length : 0),
+  const fetchComments = useCallback(async () => {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from("comments")
+      .select(`
+        id, post_id, parent_id, content, status, created_at,
+        author:profiles(id, full_name, avatar_url)
+      `)
+      .eq("post_id", postId)
+      .eq("status", "visible")
+      .order("created_at", { ascending: true });
+
+    if (!error && data) {
+      // Map to items
+      const rawList: CommentItem[] = data.map((c: any) => ({
+        id: c.id,
+        postId: c.post_id,
+        parentId: c.parent_id,
+        content: c.content,
+        userName: c.author?.full_name || "Pembaca",
+        userAvatar: c.author?.avatar_url || null,
+        createdAt: c.created_at,
+        replies: [],
+      }));
+
+      // Group parent and child
+      const parents: CommentItem[] = [];
+      const parentMap = new Map<string, CommentItem>();
+
+      rawList.forEach((c) => {
+        if (!c.parentId) {
+          parents.push(c);
+          parentMap.set(c.id, c);
+        }
+      });
+
+      rawList.forEach((c) => {
+        if (c.parentId) {
+          const p = parentMap.get(c.parentId);
+          if (p) {
+            p.replies = p.replies || [];
+            p.replies.push(c);
+          } else {
+            parents.push(c);
+          }
+        }
+      });
+
+      setComments(parents);
+    }
+    setLoading(false);
+  }, [postId]);
+
+  useEffect(() => {
+    fetchComments();
+  }, [fetchComments]);
+
+  const totalCount = comments.reduce(
+    (acc, c) => acc + 1 + (c.replies ? c.replies.length : 0),
     0
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newComment.trim()) return;
 
-    if (currentRole === "guest") {
-      showToast("Anda harus masuk (login) terlebih dahulu untuk mengirim komentar.", "warning");
+    if (!user) {
+      showToast("Anda harus masuk terlebih dahulu untuk mengirim komentar.", "warning");
       return;
     }
 
-    addComment(postId, newComment.trim());
-    setNewComment("");
+    setIsSubmitting(true);
+    const res = await addComment(postId, newComment.trim());
+    setIsSubmitting(false);
+
+    if (res?.error) {
+      showToast(res.error, "error");
+    } else {
+      showToast("Komentar Anda berhasil dikirim!", "success");
+      setNewComment("");
+      fetchComments();
+    }
   };
 
-  const handleReplySubmit = (parentId: string, e: React.FormEvent) => {
+  const handleReplySubmit = async (parentId: string, e: React.FormEvent) => {
     e.preventDefault();
     if (!replyContent.trim()) return;
 
-    if (currentRole === "guest") {
-      showToast("Anda harus masuk (login) terlebih dahulu untuk membalas komentar.", "warning");
+    if (!user) {
+      showToast("Anda harus masuk terlebih dahulu untuk membalas komentar.", "warning");
       return;
     }
 
-    addComment(postId, replyContent.trim(), parentId);
-    setReplyContent("");
-    setReplyToId(null);
+    setIsSubmitting(true);
+    const res = await addComment(postId, replyContent.trim(), parentId);
+    setIsSubmitting(false);
+
+    if (res?.error) {
+      showToast(res.error, "error");
+    } else {
+      showToast("Balasan komentar berhasil dikirim!", "success");
+      setReplyContent("");
+      setReplyToId(null);
+      fetchComments();
+    }
   };
 
   return (
@@ -65,16 +162,16 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
         </span>
       </div>
 
-      {/* Main Comment Input Form */}
+      {/* Comment Form */}
       <div className="bg-[#F0F4F8] border border-[#E5E7EB] rounded-2xl p-4 sm:p-6 mb-10">
-        {currentRole === "guest" ? (
+        {!user ? (
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4 p-3 bg-white rounded-xl border border-blue-100">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-blue-50 text-[#005AE0]">
                 <AlertCircle className="w-5 h-5" />
               </div>
               <p className="text-xs sm:text-sm text-[#111827]">
-                <span className="font-semibold">Sesuai ketentuan Redaksi & Komunitas (§3.4 PRD):</span> Pembaca wajib masuk untuk berkomentar guna mencegah spam.
+                <span className="font-semibold">Ketentuan Redaksi:</span> Pembaca wajib masuk akun untuk berkomentar guna mencegah spam.
               </p>
             </div>
             <Link href="/login" className="shrink-0">
@@ -87,10 +184,14 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
         ) : (
           <form onSubmit={handleSubmit}>
             <div className="flex items-start gap-3 mb-3">
-              <Avatar src={currentUser?.avatar} name={currentUser?.name} size="md" />
+              <Avatar
+                src={profile?.avatar_url}
+                name={profile?.full_name || user.email || "Pengguna"}
+                size="md"
+              />
               <div className="flex-1">
                 <span className="text-xs font-semibold text-[#111827] block mb-1">
-                  Komentari sebagai: {currentUser?.name} ({currentUser?.role.toUpperCase()})
+                  Komentari sebagai: {profile?.full_name || user.email}
                 </span>
                 <textarea
                   value={newComment}
@@ -107,8 +208,16 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
               <span className="text-[11px] text-[#6B7280]">
                 Maksimal 1.000 karakter • Beretika & bebas SARA
               </span>
-              <Button variant="primary" size="sm" type="submit" disabled={!newComment.trim()}>
-                Kirim Komentar
+              <Button
+                variant="primary"
+                size="sm"
+                type="submit"
+                disabled={isSubmitting || !newComment.trim()}
+              >
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                ) : null}
+                <span>Kirim Komentar</span>
               </Button>
             </div>
           </form>
@@ -116,86 +225,106 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
       </div>
 
       {/* Comment List */}
-      <div className="space-y-6 divide-y divide-[#E5E7EB]">
-        {postComments.length === 0 ? (
-          <div className="text-center py-10 text-sm text-[#6B7280]">
-            Belum ada komentar untuk tulisan ini. Jadilah yang pertama memberikan pandangan!
-          </div>
-        ) : (
-          postComments.map((comment) => (
-            <div key={comment.id} className="pt-6 first:pt-0">
-              {/* Top Level Comment */}
-              <div className="flex items-start gap-3.5">
-                <Avatar src={comment.userAvatar} name={comment.userName} size="md" />
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <span className="text-sm font-bold text-[#111827]">
-                      {comment.userName}
-                    </span>
-                    <span className="text-xs text-[#6B7280]">
-                      {formatDate(comment.createdAt)}
-                    </span>
-                  </div>
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="w-6 h-6 animate-spin text-[#005AE0]" />
+        </div>
+      ) : (
+        <div className="space-y-6 divide-y divide-[#E5E7EB]">
+          {comments.length === 0 ? (
+            <div className="text-center py-10 text-sm text-[#6B7280]">
+              Belum ada komentar untuk tulisan ini. Jadilah yang pertama memberikan pandangan!
+            </div>
+          ) : (
+            comments.map((comment) => (
+              <div key={comment.id} className="pt-6 first:pt-0">
+                <div className="flex items-start gap-3.5">
+                  <Avatar
+                    src={comment.userAvatar}
+                    name={comment.userName}
+                    size="md"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <span className="text-sm font-bold text-[#111827]">
+                        {comment.userName}
+                      </span>
+                      <span className="text-xs text-[#6B7280]">
+                        {formatDate(comment.createdAt)}
+                      </span>
+                    </div>
 
-                  <p className="text-sm text-[#111827] leading-relaxed mb-2.5">
-                    {comment.content}
-                  </p>
+                    <p className="text-sm text-[#111827] leading-relaxed mb-2.5">
+                      {comment.content}
+                    </p>
 
-                  <button
-                    onClick={() => {
-                      if (replyToId === comment.id) {
-                        setReplyToId(null);
-                      } else {
-                        setReplyToId(comment.id);
-                        setReplyContent("");
-                      }
-                    }}
-                    className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#005AE0] hover:text-[#003c94] transition-colors cursor-pointer py-1"
-                  >
-                    <Reply className="w-3.5 h-3.5" />
-                    <span>{replyToId === comment.id ? "Batal Balas" : "Balas"}</span>
-                  </button>
+                    {user && (
+                      <button
+                        onClick={() => {
+                          if (replyToId === comment.id) {
+                            setReplyToId(null);
+                          } else {
+                            setReplyToId(comment.id);
+                            setReplyContent("");
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#005AE0] hover:text-[#003c94] transition-colors cursor-pointer py-1"
+                      >
+                        <Reply className="w-3.5 h-3.5" />
+                        <span>{replyToId === comment.id ? "Batal Balas" : "Balas"}</span>
+                      </button>
+                    )}
 
-                  {/* Reply Form */}
-                  {replyToId === comment.id && (
-                    <form
-                      onSubmit={(e) => handleReplySubmit(comment.id, e)}
-                      className="mt-3 pl-3 border-l-2 border-[#005AE0] bg-gray-50 p-3 rounded-r-xl"
-                    >
-                      <textarea
-                        value={replyContent}
-                        onChange={(e) => setReplyContent(e.target.value)}
-                        placeholder={`Balas komentar ${comment.userName}...`}
-                        rows={2}
-                        className="w-full p-2.5 text-xs sm:text-sm bg-white rounded-lg border border-[#E5E7EB] focus:border-[#005AE0] focus:outline-none transition-all mb-2"
-                        required
-                        autoFocus
-                      />
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          type="button"
-                          onClick={() => setReplyToId(null)}
-                        >
-                          Batal
-                        </Button>
-                        <Button variant="primary" size="sm" type="submit">
-                          Kirim Balasan
-                        </Button>
-                      </div>
-                    </form>
-                  )}
+                    {/* Reply Form */}
+                    {replyToId === comment.id && (
+                      <form
+                        onSubmit={(e) => handleReplySubmit(comment.id, e)}
+                        className="mt-3 pl-3 border-l-2 border-[#005AE0] bg-gray-50 p-3 rounded-r-xl"
+                      >
+                        <textarea
+                          value={replyContent}
+                          onChange={(e) => setReplyContent(e.target.value)}
+                          placeholder={`Balas komentar ${comment.userName}...`}
+                          rows={2}
+                          className="w-full p-2.5 text-xs sm:text-sm bg-white rounded-lg border border-[#E5E7EB] focus:border-[#005AE0] focus:outline-none transition-all mb-2"
+                          required
+                          autoFocus
+                        />
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            type="button"
+                            onClick={() => setReplyToId(null)}
+                          >
+                            Batal
+                          </Button>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            type="submit"
+                            disabled={isSubmitting}
+                          >
+                            {isSubmitting ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+                            ) : null}
+                            <span>Kirim Balasan</span>
+                          </Button>
+                        </div>
+                      </form>
+                    )}
 
-                  {/* 1-Level Nested Replies (indent: spacing.xl / 32px) */}
-                  {comment.replies && comment.replies.length > 0 && (
-                    <div className="mt-4 pl-6 sm:pl-8 space-y-3.5 border-l-2 border-[#E5E7EB]">
-                      {comment.replies
-                        .filter((r) => r.status === "visible")
-                        .map((reply) => (
+                    {/* Nested Replies */}
+                    {comment.replies && comment.replies.length > 0 && (
+                      <div className="mt-4 pl-6 sm:pl-8 space-y-3.5 border-l-2 border-[#E5E7EB]">
+                        {comment.replies.map((reply) => (
                           <div key={reply.id} className="flex items-start gap-3">
                             <CornerDownRight className="w-4 h-4 text-gray-400 shrink-0 mt-1" />
-                            <Avatar src={reply.userAvatar} name={reply.userName} size="sm" />
+                            <Avatar
+                              src={reply.userAvatar}
+                              name={reply.userName}
+                              size="sm"
+                            />
                             <div className="flex-1 min-w-0 bg-gray-50 p-3 rounded-xl border border-[#E5E7EB]">
                               <div className="flex items-center justify-between gap-2 mb-1">
                                 <span className="text-xs font-bold text-[#111827]">
@@ -211,14 +340,15 @@ export function CommentsSection({ postId }: CommentsSectionProps) {
                             </div>
                           </div>
                         ))}
-                    </div>
-                  )}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))
-        )}
-      </div>
+            ))
+          )}
+        </div>
+      )}
     </section>
   );
 }

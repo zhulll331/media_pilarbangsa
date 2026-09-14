@@ -3,7 +3,7 @@ import Image from "next/image";
 import { cn } from "@/lib/utils";
 
 export interface AvatarProps extends React.HTMLAttributes<HTMLDivElement> {
-  src?: string;
+  src?: string | null;
   alt?: string;
   name?: string;
   size?: "xs" | "sm" | "md" | "lg" | "xl";

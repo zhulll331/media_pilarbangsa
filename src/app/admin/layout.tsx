@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { usePortal } from "@/context/portal-context";
+import { createClient } from "@/lib/supabase/client";
 import { Avatar } from "@/components/ui/avatar";
 import {
   Inbox,
@@ -24,17 +25,24 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { currentUser, setRole, signOut, posts, comments } = usePortal();
+  const { profile, user, signOut } = usePortal();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [pendingPostsCount, setPendingPostsCount] = useState(0);
 
-  const pendingPostsCount = posts.filter((p) => p.status === "pending").length;
+  const adminName = profile?.full_name ?? user?.email ?? 'Admin Redaksi';
+  const adminAvatar = profile?.avatar_url ?? undefined;
 
-  const admin = currentUser || {
-    name: "Siti Rahma",
-    email: "ukmpilarbangsa@gmail.com",
-    avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
-    role: "admin" as const,
-  };
+  useEffect(() => {
+    const fetchPendingCount = async () => {
+      const supabase = createClient();
+      const { count } = await supabase
+        .from('posts')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending_review');
+      setPendingPostsCount(count ?? 0);
+    };
+    fetchPendingCount();
+  }, []);
 
   const navLinks = [
     {
@@ -147,10 +155,10 @@ export default function AdminLayout({
           </Link>
 
           <div className="flex items-center gap-2.5 p-2 rounded-xl bg-white/5 border border-white/10">
-            <Avatar src={admin.avatar} name={admin.name} size="sm" />
+            <Avatar src={adminAvatar} name={adminName} size="sm" />
             <div className="flex-1 min-w-0">
               <span className="text-xs font-bold text-white block truncate">
-                {admin.name}
+                {adminName}
               </span>
               <span className="text-[10px] text-amber-400 block truncate">
                 Pemimpin Redaksi
