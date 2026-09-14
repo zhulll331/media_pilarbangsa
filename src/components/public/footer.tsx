@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
-import { Rss, Mail, MapPin, Phone, ArrowUpRight } from "lucide-react";
-import { InstagramIcon, WhatsappIcon } from "@/components/ui/social-icons";
+import { Rss, Mail, MapPin, ArrowUpRight } from "lucide-react";
+import { InstagramIcon } from "@/components/ui/social-icons";
 
 export function Footer() {
   return (
@@ -28,7 +28,7 @@ export function Footer() {
               menyuarakan gagasan, dan mengeksplorasi karya sastra kampus.
             </p>
 
-            <div className="space-y-3.5 text-xs text-gray-300">
+            <div className="space-y-3 text-xs text-gray-300">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#005AE0] shrink-0 mt-0.5" />
                 <div>
@@ -48,35 +48,10 @@ export function Footer() {
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#005AE0] shrink-0" />
                 <div>
-                  <span className="font-semibold text-white mr-1.5">Email Resmi:</span>
+                  <span className="font-semibold text-white mr-1.5">Email Redaksi:</span>
                   <a href="mailto:ukmpilarbangsa@gmail.com" className="hover:text-white transition-colors">
                     ukmpilarbangsa@gmail.com
                   </a>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-2.5">
-                <Phone className="w-4 h-4 text-[#005AE0] shrink-0 mt-0.5" />
-                <div>
-                  <span className="font-semibold text-white block mb-1">WhatsApp (Sekretaris):</span>
-                  <div className="space-y-1">
-                    <a 
-                      href="https://wa.me/6285607851580?text=Hai%20kak%2C%20saya%20berminat%20untuk%20bergabung%20di%20UKM%20Pilar%20Bangsa..." 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="block text-gray-300 hover:text-emerald-400 transition-colors"
-                    >
-                      +62 856-0785-1580 (Sekre 1)
-                    </a>
-                    <a 
-                      href="https://wa.me/6283853945812?text=Hai%20kak%2C%20saya%20berminat%20untuk%20bergabung%20di%20UKM%20Pilar%20Bangsa..." 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="block text-gray-300 hover:text-emerald-400 transition-colors"
-                    >
-                      +62 838-5394-5812 (Sekre 2)
-                    </a>
-                  </div>
                 </div>
               </div>
             </div>
@@ -174,7 +149,7 @@ export function Footer() {
             </Link>
 
             <div className="pt-2">
-              <span className="text-xs font-semibold text-white block mb-2">Media Sosial & Kontak:</span>
+              <span className="text-xs font-semibold text-white block mb-2">Media Sosial Resmi:</span>
               <div className="flex items-center gap-2.5 text-gray-300">
                 <a 
                   href="https://www.instagram.com/ukmpilarbangsa?igsh=MWxtOHlhaGlrczNl" 
@@ -187,19 +162,9 @@ export function Footer() {
                   <InstagramIcon className="w-4 h-4" />
                 </a>
                 <a 
-                  href="https://wa.me/6285607851580?text=Hai%20kak%2C%20saya%20berminat%20untuk%20bergabung%20di%20UKM%20Pilar%20Bangsa..." 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="p-2 rounded-full bg-white/5 hover:bg-[#25D366] hover:text-white transition-colors" 
-                  aria-label="WhatsApp UKM Pilar Bangsa"
-                  title="WhatsApp Sekretariat"
-                >
-                  <WhatsappIcon className="w-4 h-4" />
-                </a>
-                <a 
                   href="mailto:ukmpilarbangsa@gmail.com" 
                   className="p-2 rounded-full bg-white/5 hover:bg-[#005AE0] hover:text-white transition-colors" 
-                  aria-label="Email UKM Pilar Bangsa"
+                  aria-label="Email Redaksi Pilar Bangsa"
                   title="Email ukmpilarbangsa@gmail.com"
                 >
                   <Mail className="w-4 h-4" />

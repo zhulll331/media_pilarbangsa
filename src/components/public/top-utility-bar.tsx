@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Mail, MapPin } from "lucide-react";
-import { InstagramIcon, WhatsappIcon } from "@/components/ui/social-icons";
+import { InstagramIcon } from "@/components/ui/social-icons";
 
 export interface TrendingItem {
   title: string;
@@ -98,16 +98,6 @@ export function TopUtilityBar({ initialTrending }: TopUtilityBarProps) {
               title="Instagram @ukmpilarbangsa"
             >
               <InstagramIcon className="w-3.5 h-3.5" />
-            </a>
-            <a
-              href="https://wa.me/6285607851580?text=Hai%20kak%2C%20saya%20berminat%20untuk%20bergabung%20di%20UKM%20Pilar%20Bangsa..."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#25D366] transition-colors"
-              aria-label="WhatsApp UKM Pilar Bangsa"
-              title="WhatsApp Sekretariat"
-            >
-              <WhatsappIcon className="w-3.5 h-3.5" />
             </a>
             <a
               href="mailto:ukmpilarbangsa@gmail.com"
