@@ -1,6 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/supabase/server';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { revalidatePath } from 'next/cache';
 
 export async function updateProfile(data: { fullName: string; bio?: string }) {
@@ -48,17 +49,19 @@ export async function uploadAvatar(formData: FormData) {
   const fileExt = file.name.split('.').pop() || 'png';
   const filePath = `${user.id}/avatar-${Date.now()}.${fileExt}`;
 
-  const { error: uploadError } = await supabase.storage
+  const adminClient = createAdminClient();
+  const { error: uploadError } = await adminClient.storage
     .from('avatars')
     .upload(filePath, file, {
       upsert: true,
+      contentType: file.type || 'image/png',
     });
 
   if (uploadError) {
     return { error: uploadError.message };
   }
 
-  const { data: { publicUrl } } = supabase.storage
+  const { data: { publicUrl } } = adminClient.storage
     .from('avatars')
     .getPublicUrl(filePath);
 
@@ -91,17 +94,20 @@ export async function uploadCoverImage(formData: FormData) {
   const fileExt = file.name.split('.').pop() || 'jpg';
   const filePath = `${user.id}/${Date.now()}-cover.${fileExt}`;
 
-  const { error: uploadError } = await supabase.storage
+  const adminClient = createAdminClient();
+  const { error: uploadError } = await adminClient.storage
     .from('post-covers')
     .upload(filePath, file, {
       upsert: true,
+      contentType: file.type || 'image/jpeg',
     });
 
   if (uploadError) {
+    console.error('Storage upload error:', uploadError);
     return { error: uploadError.message };
   }
 
-  const { data: { publicUrl } } = supabase.storage
+  const { data: { publicUrl } } = adminClient.storage
     .from('post-covers')
     .getPublicUrl(filePath);
 

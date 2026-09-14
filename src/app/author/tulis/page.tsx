@@ -40,6 +40,7 @@ function AuthorEditorContent() {
   const [lastSaved, setLastSaved] = useState<string>("Belum disimpan");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUploadingCover, setIsUploadingCover] = useState(false);
   const [isLoadingPost, setIsLoadingPost] = useState(false);
   const isLoadedRef = useRef(false);
 
@@ -109,22 +110,22 @@ function AuthorEditorContent() {
       return;
     }
 
+    setIsUploadingCover(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
       const res = await uploadCoverImage(formData);
-      if (res.success && res.publicUrl) {
+      if (res?.success && res.publicUrl) {
         setCoverImage(res.publicUrl);
         showToast("Gambar sampul berhasil diunggah!", "success");
-        return;
+      } else {
+        showToast(res?.error || "Gagal mengunggah gambar sampul.", "error");
       }
-    } catch {
-      // Fallback
+    } catch (err: any) {
+      showToast(err?.message || "Terjadi kesalahan saat mengunggah gambar.", "error");
+    } finally {
+      setIsUploadingCover(false);
     }
-
-    const objectUrl = URL.createObjectURL(file);
-    setCoverImage(objectUrl);
-    showToast("Gambar sampul dipilih.", "success");
   };
 
   // Manual Save Draft Function
@@ -382,11 +383,21 @@ function AuthorEditorContent() {
 
             <div className="pt-1">
               <label className="flex items-center justify-center gap-2 w-full py-2 px-3 border border-[#E5E7EB] hover:border-[#005AE0] rounded-xl text-xs font-semibold text-[#005AE0] bg-[#F0F4F8] hover:bg-blue-50 transition-colors cursor-pointer">
-                <Upload className="w-4 h-4" />
-                <span>Ganti Gambar (Maks 2MB)</span>
+                {isUploadingCover ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin text-[#005AE0]" />
+                    <span>Mengunggah Sampul...</span>
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4" />
+                    <span>Ganti Gambar (Maks 2MB)</span>
+                  </>
+                )}
                 <input
                   type="file"
                   accept="image/*"
+                  disabled={isUploadingCover}
                   onChange={handleImageUpload}
                   className="sr-only"
                 />

@@ -48,6 +48,13 @@ export default async function ArticleDetailPage({
   const p = rawPost as any;
   const authorData = Array.isArray(p.author) ? p.author[0] : p.author;
   const categoryData = Array.isArray(p.category) ? p.category[0] : p.category;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mediapilarbangsa.web.id";
+  const articleUrl = `${siteUrl}/artikel/${p.slug}`;
+
+  const postCoverImage =
+    !p.cover_image_url || p.cover_image_url.startsWith("blob:")
+      ? "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200"
+      : p.cover_image_url;
 
   const post: Post = {
     id: p.id,
@@ -55,7 +62,7 @@ export default async function ArticleDetailPage({
     slug: p.slug,
     excerpt: p.excerpt || "",
     content: p.content || "",
-    coverImage: p.cover_image_url || "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200",
+    coverImage: postCoverImage,
     authorId: p.author_id,
     author: {
       id: authorData?.id || p.author_id,
@@ -214,7 +221,7 @@ export default async function ArticleDetailPage({
                   </div>
                 </Link>
 
-                <ShareBar title={post.title} />
+                <ShareBar title={post.title} url={articleUrl} />
               </div>
 
               {/* Cover Image */}
@@ -264,7 +271,7 @@ export default async function ArticleDetailPage({
                 <span className="text-xs font-semibold text-[#111827]">
                   Sukai tulisan ini? Bagikan kepada rekan mahasiswa lainnya:
                 </span>
-                <ShareBar title={post.title} />
+                <ShareBar title={post.title} url={articleUrl} />
               </div>
 
               {/* Author Box */}

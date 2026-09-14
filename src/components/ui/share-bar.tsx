@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MessageCircle, Share2, Copy, Check } from "lucide-react";
 import { usePortal } from "@/context/portal-context";
 import { cn } from "@/lib/utils";
@@ -29,12 +29,18 @@ export interface ShareBarProps {
 
 export function ShareBar({ title, url, className }: ShareBarProps) {
   const [copied, setCopied] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string>(url || "");
   const { showToast } = usePortal();
 
-  const getShareUrl = () => {
-    if (typeof window !== "undefined") {
-      return url || window.location.href;
+  useEffect(() => {
+    if (!url && typeof window !== "undefined") {
+      setShareUrl(window.location.href);
     }
+  }, [url]);
+
+  const getShareUrl = () => {
+    if (shareUrl) return shareUrl;
+    if (typeof window !== "undefined") return window.location.href;
     return url || "";
   };
 
