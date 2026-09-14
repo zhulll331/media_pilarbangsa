@@ -49,8 +49,8 @@ export function Footer() {
             </h4>
             <ul className="space-y-2.5 text-sm text-gray-300">
               <li>
-                <Link href="/kategori/berita-kampus" className="hover:text-white transition-colors flex items-center gap-1">
-                  <span>Berita Kampus</span>
+                <Link href="/kategori/berita-ukm" className="hover:text-white transition-colors flex items-center gap-1">
+                  <span>Berita UKM</span>
                 </Link>
               </li>
               <li>

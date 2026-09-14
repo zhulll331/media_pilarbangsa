@@ -223,7 +223,7 @@ CREATE POLICY "history_insert" ON public.post_status_history FOR INSERT WITH CHE
 
 -- SEED DATA
 INSERT INTO public.categories (name, slug, description) VALUES
-  ('Berita Kampus',    'berita-kampus',    'Warta dan informasi seputar kegiatan kampus UNTAG Banyuwangi'),
+  ('Berita UKM',       'berita-ukm',       'Warta dan informasi seputar kegiatan UKM Pilar Bangsa dan mahasiswa UNTAG Banyuwangi'),
   ('Opini & Gagasan',  'opini',            'Kolom opini, esai argumentatif, dan gagasan kritis mahasiswa'),
   ('Sastra & Budaya',  'sastra',           'Puisi, cerpen, dan esai sastra budaya Banyuwangi'),
   ('Reportase',        'reportase',        'Liputan mendalam dan jurnalisme mahasiswa'),

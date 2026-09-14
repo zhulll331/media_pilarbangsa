@@ -11,7 +11,7 @@ export function Navbar() {
 
   const navItems = [
     { name: "Beranda", href: "/" },
-    { name: "Berita Kampus", href: "/kategori/berita-kampus" },
+    { name: "Berita UKM", href: "/kategori/berita-ukm" },
     { name: "Opini", href: "/kategori/opini" },
     { name: "Sastra", href: "/kategori/sastra" },
     { name: "Cerpen", href: "/kategori/cerpen" },
