@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
-import { Mail } from "lucide-react";
-import { InstagramIcon, YoutubeIcon, FacebookIcon } from "@/components/ui/social-icons";
+import { Mail, MapPin } from "lucide-react";
+import { InstagramIcon, WhatsappIcon } from "@/components/ui/social-icons";
 
 export interface TrendingItem {
   title: string;
@@ -88,40 +88,44 @@ export function TopUtilityBar({ initialTrending }: TopUtilityBarProps) {
         <div className="hidden md:flex items-center gap-4 shrink-0">
           <span className="text-[#6B7280] font-normal">{currentDate}</span>
           <div className="h-3 w-px bg-[#E5E7EB]" />
-          <div className="flex items-center gap-2 text-[#6B7280]">
+          <div className="flex items-center gap-3 text-[#6B7280]">
             <a
-              href="https://instagram.com"
+              href="https://www.instagram.com/ukmpilarbangsa?igsh=MWxtOHlhaGlrczNl"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#005AE0] transition-colors"
-              aria-label="Instagram Pilar Bangsa"
+              className="hover:text-[#E1306C] transition-colors"
+              aria-label="Instagram @ukmpilarbangsa"
+              title="Instagram @ukmpilarbangsa"
             >
               <InstagramIcon className="w-3.5 h-3.5" />
             </a>
             <a
-              href="https://youtube.com"
+              href="https://wa.me/6285607851580?text=Hai%20kak%2C%20saya%20berminat%20untuk%20bergabung%20di%20UKM%20Pilar%20Bangsa..."
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-[#005AE0] transition-colors"
-              aria-label="YouTube Pilar Bangsa"
+              className="hover:text-[#25D366] transition-colors"
+              aria-label="WhatsApp UKM Pilar Bangsa"
+              title="WhatsApp Sekretariat"
             >
-              <YoutubeIcon className="w-3.5 h-3.5" />
-            </a>
-            <a
-              href="https://facebook.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-[#005AE0] transition-colors"
-              aria-label="Facebook Pilar Bangsa"
-            >
-              <FacebookIcon className="w-3.5 h-3.5" />
+              <WhatsappIcon className="w-3.5 h-3.5" />
             </a>
             <a
               href="mailto:ukmpilarbangsa@gmail.com"
               className="hover:text-[#005AE0] transition-colors"
               aria-label="Email Redaksi Pilar Bangsa"
+              title="Email ukmpilarbangsa@gmail.com"
             >
               <Mail className="w-3.5 h-3.5" />
+            </a>
+            <a
+              href="https://maps.app.goo.gl/Kqw7VtiUXvSuqFFS6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-red-500 transition-colors"
+              aria-label="Lokasi Sekretariat Google Maps"
+              title="Lokasi Google Maps"
+            >
+              <MapPin className="w-3.5 h-3.5" />
             </a>
           </div>
         </div>

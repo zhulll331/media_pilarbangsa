@@ -1,7 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Rss, Mail, MapPin, Phone, ArrowUpRight } from "lucide-react";
-import { InstagramIcon, YoutubeIcon, FacebookIcon } from "@/components/ui/social-icons";
+import { InstagramIcon, WhatsappIcon } from "@/components/ui/social-icons";
 
 export function Footer() {
   return (
@@ -28,16 +28,56 @@ export function Footer() {
               menyuarakan gagasan, dan mengeksplorasi karya sastra kampus.
             </p>
 
-            <div className="space-y-2 text-xs text-gray-300">
+            <div className="space-y-3.5 text-xs text-gray-300">
               <div className="flex items-start gap-2.5">
                 <MapPin className="w-4 h-4 text-[#005AE0] shrink-0 mt-0.5" />
-                <span>Gedung UKM Pilar Bangsa, Kampus UNTAG Banyuwangi, Jl. Adi Sucipto No. 26, Banyuwangi, Jawa Timur</span>
+                <div>
+                  <span className="font-semibold text-white block mb-0.5">Alamat Sekretariat:</span>
+                  <a 
+                    href="https://maps.app.goo.gl/Kqw7VtiUXvSuqFFS6" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="hover:text-[#FFD700] transition-colors block leading-relaxed"
+                  >
+                    Jalan Laksda Jl. Adi Sucipto, Taman Baru, Banyuwangi Sub-District, Banyuwangi Regency, East Java 68416
+                    <span className="text-[11px] text-blue-400 underline mt-0.5 block">📍 Buka di Google Maps</span>
+                  </a>
+                </div>
               </div>
+
               <div className="flex items-center gap-2.5">
                 <Mail className="w-4 h-4 text-[#005AE0] shrink-0" />
-                <a href="mailto:ukmpilarbangsa@gmail.com" className="hover:text-white transition-colors">
-                  ukmpilarbangsa@gmail.com
-                </a>
+                <div>
+                  <span className="font-semibold text-white mr-1.5">Email Resmi:</span>
+                  <a href="mailto:ukmpilarbangsa@gmail.com" className="hover:text-white transition-colors">
+                    ukmpilarbangsa@gmail.com
+                  </a>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-2.5">
+                <Phone className="w-4 h-4 text-[#005AE0] shrink-0 mt-0.5" />
+                <div>
+                  <span className="font-semibold text-white block mb-1">WhatsApp (Sekretaris):</span>
+                  <div className="space-y-1">
+                    <a 
+                      href="https://wa.me/6285607851580?text=Hai%20kak%2C%20saya%20berminat%20untuk%20bergabung%20di%20UKM%20Pilar%20Bangsa..." 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block text-gray-300 hover:text-emerald-400 transition-colors"
+                    >
+                      +62 856-0785-1580 (Sekre 1)
+                    </a>
+                    <a 
+                      href="https://wa.me/6283853945812?text=Hai%20kak%2C%20saya%20berminat%20untuk%20bergabung%20di%20UKM%20Pilar%20Bangsa..." 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="block text-gray-300 hover:text-emerald-400 transition-colors"
+                    >
+                      +62 838-5394-5812 (Sekre 2)
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -134,19 +174,45 @@ export function Footer() {
             </Link>
 
             <div className="pt-2">
+              <span className="text-xs font-semibold text-white block mb-2">Media Sosial & Kontak:</span>
               <div className="flex items-center gap-2.5 text-gray-300">
-                <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white/5 hover:bg-[#005AE0] hover:text-white transition-colors" aria-label="Instagram">
+                <a 
+                  href="https://www.instagram.com/ukmpilarbangsa?igsh=MWxtOHlhaGlrczNl" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-2 rounded-full bg-white/5 hover:bg-[#E1306C] hover:text-white transition-colors" 
+                  aria-label="Instagram UKM Pilar Bangsa"
+                  title="Instagram @ukmpilarbangsa"
+                >
                   <InstagramIcon className="w-4 h-4" />
                 </a>
-                <a href="https://youtube.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white/5 hover:bg-[#005AE0] hover:text-white transition-colors" aria-label="YouTube">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-                  </svg>
+                <a 
+                  href="https://wa.me/6285607851580?text=Hai%20kak%2C%20saya%20berminat%20untuk%20bergabung%20di%20UKM%20Pilar%20Bangsa..." 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-2 rounded-full bg-white/5 hover:bg-[#25D366] hover:text-white transition-colors" 
+                  aria-label="WhatsApp UKM Pilar Bangsa"
+                  title="WhatsApp Sekretariat"
+                >
+                  <WhatsappIcon className="w-4 h-4" />
                 </a>
-                <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white/5 hover:bg-[#005AE0] hover:text-white transition-colors" aria-label="Facebook">
-                  <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                  </svg>
+                <a 
+                  href="mailto:ukmpilarbangsa@gmail.com" 
+                  className="p-2 rounded-full bg-white/5 hover:bg-[#005AE0] hover:text-white transition-colors" 
+                  aria-label="Email UKM Pilar Bangsa"
+                  title="Email ukmpilarbangsa@gmail.com"
+                >
+                  <Mail className="w-4 h-4" />
+                </a>
+                <a 
+                  href="https://maps.app.goo.gl/Kqw7VtiUXvSuqFFS6" 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="p-2 rounded-full bg-white/5 hover:bg-red-500 hover:text-white transition-colors" 
+                  aria-label="Lokasi Sekretariat Google Maps"
+                  title="Buka di Google Maps"
+                >
+                  <MapPin className="w-4 h-4" />
                 </a>
               </div>
             </div>
