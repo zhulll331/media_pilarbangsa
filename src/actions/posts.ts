@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { createAdminClient } from '@/lib/supabase/admin';
-import DOMPurify from 'isomorphic-dompurify';
 import { slugify } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 import {
@@ -11,13 +10,17 @@ import {
   sendPostRejectedEmailToAuthor,
 } from '@/lib/email/templates';
 
-const SANITIZE_CONFIG = {
-  ALLOWED_TAGS: [
-    'p', 'h2', 'h3', 'h4', 'strong', 'em', 'u', 's', 'ul', 'ol', 'li',
-    'blockquote', 'a', 'img', 'br', 'hr', 'code', 'pre', 'span'
-  ],
-  ALLOWED_ATTR: ['href', 'src', 'alt', 'title', 'target', 'rel', 'class', 'width', 'height'],
-};
+function sanitizeHtml(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<iframe\b[^<]*(?:(?!<\/iframe>)<[^<]*)*<\/iframe>/gi, '')
+    .replace(/<object\b[^<]*(?:(?!<\/object>)<[^<]*)*<\/object>/gi, '')
+    .replace(/<embed\b[^<]*(?:(?!<\/embed>)<[^<]*)*<\/embed>/gi, '')
+    .replace(/\bon\w+\s*=\s*(["']).*?\1/gi, '')
+    .replace(/\bon\w+\s*=\s*[^>\s]+/gi, '')
+    .replace(/javascript\s*:/gi, '');
+}
 
 export async function createDraft(data: {
   title: string;
@@ -27,50 +30,56 @@ export async function createDraft(data: {
   coverImage?: string;
   tagIds?: string[];
 }) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { error: 'Anda harus masuk terlebih dahulu.' };
+    if (!user) {
+      return { error: 'Anda harus masuk terlebih dahulu.' };
+    }
+
+    const cleanContent = sanitizeHtml(data.content || '');
+    const baseSlug = slugify(data.title || 'draft');
+    const uniqueSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
+    const categoryId = (data.categoryId && data.categoryId.trim() !== '') ? data.categoryId : null;
+
+    const { data: post, error } = await supabase
+      .from('posts')
+      .insert({
+        title: data.title,
+        slug: uniqueSlug,
+        excerpt: data.excerpt || data.title,
+        content: cleanContent,
+        category_id: categoryId,
+        cover_image_url: data.coverImage || null,
+        author_id: user.id,
+        status: 'draft',
+      })
+      .select()
+      .single();
+
+    if (error || !post) {
+      console.error('Error createDraft:', error);
+      return { error: error?.message || 'Gagal menyimpan draf.' };
+    }
+
+    // Tags
+    if (data.tagIds && data.tagIds.length > 0) {
+      const postTags = data.tagIds.map((tagId) => ({
+        post_id: post.id,
+        tag_id: tagId,
+      }));
+      await supabase.from('post_tags').insert(postTags);
+    }
+
+    revalidatePath('/author');
+    revalidatePath('/author/tulisan');
+
+    return { success: true, post };
+  } catch (err: any) {
+    console.error('Exception createDraft:', err);
+    return { error: err?.message || 'Terjadi kesalahan sistem saat menyimpan draf.' };
   }
-
-  const cleanContent = DOMPurify.sanitize(data.content || '', SANITIZE_CONFIG);
-  const baseSlug = slugify(data.title || 'draft');
-  const uniqueSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
-
-  const { data: post, error } = await supabase
-    .from('posts')
-    .insert({
-      title: data.title,
-      slug: uniqueSlug,
-      excerpt: data.excerpt || data.title,
-      content: cleanContent,
-      category_id: data.categoryId || null,
-      cover_image_url: data.coverImage || null,
-      author_id: user.id,
-      status: 'draft',
-    })
-    .select()
-    .single();
-
-  if (error || !post) {
-    console.error('Error createDraft:', error);
-    return { error: error?.message || 'Gagal menyimpan draf.' };
-  }
-
-  // Tags
-  if (data.tagIds && data.tagIds.length > 0) {
-    const postTags = data.tagIds.map((tagId) => ({
-      post_id: post.id,
-      tag_id: tagId,
-    }));
-    await supabase.from('post_tags').insert(postTags);
-  }
-
-  revalidatePath('/author');
-  revalidatePath('/author/tulisan');
-
-  return { success: true, post };
 }
 
 export async function updateDraft(
@@ -84,74 +93,79 @@ export async function updateDraft(
     tagIds?: string[];
   }
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (!user) {
-    return { error: 'Anda harus masuk terlebih dahulu.' };
-  }
-
-  // Cek apakah post ada dan milik user serta berstatus draft / rejected
-  const { data: existingPost } = await supabase
-    .from('posts')
-    .select('id, author_id, status')
-    .eq('id', postId)
-    .single();
-
-  if (!existingPost) {
-    return { error: 'Naskah tidak ditemukan.' };
-  }
-
-  if (existingPost.author_id !== user.id) {
-    return { error: 'Anda tidak memiliki hak untuk mengedit naskah ini.' };
-  }
-
-  if (existingPost.status !== 'draft' && existingPost.status !== 'rejected') {
-    return { error: 'Naskah yang sedang ditinjau atau sudah terbit tidak dapat diedit.' };
-  }
-
-  const updatePayload: Record<string, any> = {};
-  if (data.title !== undefined) {
-    updatePayload.title = data.title;
-  }
-  if (data.excerpt !== undefined) {
-    updatePayload.excerpt = data.excerpt;
-  }
-  if (data.content !== undefined) {
-    updatePayload.content = DOMPurify.sanitize(data.content, SANITIZE_CONFIG);
-  }
-  if (data.categoryId !== undefined) {
-    updatePayload.category_id = data.categoryId;
-  }
-  if (data.coverImage !== undefined) {
-    updatePayload.cover_image_url = data.coverImage;
-  }
-
-  const { error } = await supabase
-    .from('posts')
-    .update(updatePayload)
-    .eq('id', postId);
-
-  if (error) {
-    return { error: error.message };
-  }
-
-  // Update tags jika disertakan
-  if (data.tagIds !== undefined) {
-    await supabase.from('post_tags').delete().eq('post_id', postId);
-    if (data.tagIds.length > 0) {
-      const postTags = data.tagIds.map((tagId) => ({
-        post_id: postId,
-        tag_id: tagId,
-      }));
-      await supabase.from('post_tags').insert(postTags);
+    if (!user) {
+      return { error: 'Anda harus masuk terlebih dahulu.' };
     }
+
+    // Cek apakah post ada dan milik user serta berstatus draft / rejected
+    const { data: existingPost } = await supabase
+      .from('posts')
+      .select('id, author_id, status')
+      .eq('id', postId)
+      .single();
+
+    if (!existingPost) {
+      return { error: 'Naskah tidak ditemukan.' };
+    }
+
+    if (existingPost.author_id !== user.id) {
+      return { error: 'Anda tidak memiliki hak untuk mengedit naskah ini.' };
+    }
+
+    if (existingPost.status !== 'draft' && existingPost.status !== 'rejected') {
+      return { error: 'Naskah yang sedang ditinjau atau sudah terbit tidak dapat diedit.' };
+    }
+
+    const updatePayload: Record<string, any> = {};
+    if (data.title !== undefined) {
+      updatePayload.title = data.title;
+    }
+    if (data.excerpt !== undefined) {
+      updatePayload.excerpt = data.excerpt;
+    }
+    if (data.content !== undefined) {
+      updatePayload.content = sanitizeHtml(data.content);
+    }
+    if (data.categoryId !== undefined) {
+      updatePayload.category_id = (data.categoryId && data.categoryId.trim() !== '') ? data.categoryId : null;
+    }
+    if (data.coverImage !== undefined) {
+      updatePayload.cover_image_url = data.coverImage;
+    }
+
+    const { error } = await supabase
+      .from('posts')
+      .update(updatePayload)
+      .eq('id', postId);
+
+    if (error) {
+      return { error: error.message };
+    }
+
+    // Update tags jika disertakan
+    if (data.tagIds !== undefined) {
+      await supabase.from('post_tags').delete().eq('post_id', postId);
+      if (data.tagIds.length > 0) {
+        const postTags = data.tagIds.map((tagId) => ({
+          post_id: postId,
+          tag_id: tagId,
+        }));
+        await supabase.from('post_tags').insert(postTags);
+      }
+    }
+
+    revalidatePath('/author');
+    revalidatePath('/author/tulisan');
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Exception updateDraft:', err);
+    return { error: err?.message || 'Terjadi kesalahan sistem saat memperbarui draf.' };
   }
-
-  revalidatePath('/author');
-  revalidatePath('/author/tulisan');
-
-  return { success: true };
 }
 
 export async function submitForReview(postId: string) {

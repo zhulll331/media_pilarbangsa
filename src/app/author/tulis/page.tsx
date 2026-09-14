@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from "react";
+import React, { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Upload,
   Loader2,
+  CloudCheck,
 } from "lucide-react";
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { uploadCoverImage } from "@/actions/profile";
@@ -41,6 +42,7 @@ function AuthorEditorContent() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoadingPost, setIsLoadingPost] = useState(false);
+  const isLoadedRef = useRef(false);
 
   // Load Categories & Tags
   useEffect(() => {
@@ -53,7 +55,7 @@ function AuthorEditorContent() {
 
       if (catRes.data && catRes.data.length > 0) {
         setCategories(catRes.data as Category[]);
-        setCategoryId(catRes.data[0].id);
+        setCategoryId((prev) => prev || catRes.data[0].id);
       }
       if (tagRes.data) {
         setTags(tagRes.data as Tag[]);
@@ -64,7 +66,10 @@ function AuthorEditorContent() {
 
   // Load existing post if editing
   useEffect(() => {
-    if (!postIdParam) return;
+    if (!postIdParam) {
+      isLoadedRef.current = true;
+      return;
+    }
     const fetchPost = async () => {
       setIsLoadingPost(true);
       const supabase = createClient();
@@ -89,6 +94,7 @@ function AuthorEditorContent() {
         setLastSaved("Tersimpan di sistem");
       }
       setIsLoadingPost(false);
+      isLoadedRef.current = true;
     };
     fetchPost();
   }, [postIdParam]);
@@ -122,52 +128,92 @@ function AuthorEditorContent() {
     showToast("Gambar sampul dipilih.", "success");
   };
 
-  const handleSaveDraft = async () => {
-    if (!title.trim()) {
-      showToast("Mohon masukkan judul naskah sebelum menyimpan draf.", "warning");
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      if (currentPostId) {
-        const res = await updateDraft(currentPostId, {
-          title,
-          excerpt,
-          content,
-          categoryId: categoryId || undefined,
-          coverImage,
-          tagIds: selectedTags,
-        });
-        if (res?.error) {
-          showToast(res.error, "error");
-        } else {
-          showToast("Draf berhasil diperbarui!", "success");
-          setLastSaved(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }));
+  // Generic Save Function (handles both manual & auto-save)
+  const performSave = useCallback(
+    async (isSilent = false) => {
+      if (!title.trim()) {
+        if (!isSilent) {
+          showToast("Mohon masukkan judul naskah sebelum menyimpan draf.", "warning");
         }
-      } else {
-        const res = await createDraft({
-          title,
-          excerpt,
-          content,
-          categoryId: categoryId || undefined,
-          coverImage,
-          tagIds: selectedTags,
-        });
-        if (res?.error) {
-          showToast(res.error, "error");
-        } else if (res?.post) {
-          setCurrentPostId(res.post.id);
-          window.history.replaceState(null, "", `/author/tulis?id=${res.post.id}`);
-          showToast("Draf berhasil dibuat!", "success");
-          setLastSaved(new Date().toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }));
-        }
+        return false;
       }
-    } catch (err: any) {
-      showToast(err.message || "Gagal menyimpan draf.", "error");
-    } finally {
-      setIsSaving(false);
-    }
+
+      setIsSaving(true);
+      try {
+        if (currentPostId) {
+          const res = await updateDraft(currentPostId, {
+            title,
+            excerpt,
+            content,
+            categoryId: categoryId || undefined,
+            coverImage,
+            tagIds: selectedTags,
+          });
+
+          if (res?.error) {
+            if (!isSilent) showToast(res.error, "error");
+            return false;
+          }
+
+          const timeStr = new Date().toLocaleTimeString("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+          });
+          setLastSaved(`Otomatis tersimpan pukul ${timeStr}`);
+          if (!isSilent) showToast("Draf berhasil diperbarui!", "success");
+          return true;
+        } else {
+          const res = await createDraft({
+            title,
+            excerpt,
+            content,
+            categoryId: categoryId || undefined,
+            coverImage,
+            tagIds: selectedTags,
+          });
+
+          if (res?.error) {
+            if (!isSilent) showToast(res.error, "error");
+            return false;
+          } else if (res?.post) {
+            setCurrentPostId(res.post.id);
+            window.history.replaceState(null, "", `/author/tulis?id=${res.post.id}`);
+            const timeStr = new Date().toLocaleTimeString("id-ID", {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
+            setLastSaved(`Otomatis tersimpan pukul ${timeStr}`);
+            if (!isSilent) showToast("Draf berhasil dibuat!", "success");
+            return true;
+          }
+        }
+      } catch (err: any) {
+        if (!isSilent) {
+          showToast(err?.message || "Gagal menyimpan draf.", "error");
+        }
+        return false;
+      } finally {
+        setIsSaving(false);
+      }
+      return false;
+    },
+    [title, excerpt, content, categoryId, coverImage, selectedTags, currentPostId, showToast]
+  );
+
+  // AUTO-SAVE DEBOUNCE EFFECT (Triggers 2.5 seconds after user stops typing)
+  useEffect(() => {
+    if (!isLoadedRef.current || isLoadingPost) return;
+    if (!title.trim()) return;
+
+    const autoSaveTimer = setTimeout(() => {
+      performSave(true);
+    }, 2500);
+
+    return () => clearTimeout(autoSaveTimer);
+  }, [title, excerpt, content, categoryId, coverImage, selectedTags, performSave, isLoadingPost]);
+
+  const handleSaveDraftManual = () => {
+    performSave(false);
   };
 
   const handleSubmitForReview = async () => {
@@ -199,6 +245,7 @@ function AuthorEditorContent() {
           return;
         }
         targetPostId = createRes.post.id;
+        setCurrentPostId(targetPostId);
       } else {
         await updateDraft(targetPostId, {
           title,
@@ -227,7 +274,7 @@ function AuthorEditorContent() {
         }, 500);
       }
     } catch (err: any) {
-      showToast(err.message || "Gagal mengajukan naskah.", "error");
+      showToast(err?.message || "Gagal mengajukan naskah.", "error");
       setIsSubmitting(false);
     }
   };
@@ -265,10 +312,17 @@ function AuthorEditorContent() {
               Studio Penulisan Naskah
             </h1>
             <div className="flex items-center gap-2 text-xs text-[#6B7280]">
-              <span className="flex items-center gap-1 text-[#059669]">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>{lastSaved}</span>
-              </span>
+              {isSaving ? (
+                <span className="flex items-center gap-1.5 text-[#005AE0] font-medium">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  <span>Menyimpan draf otomatis...</span>
+                </span>
+              ) : (
+                <span className="flex items-center gap-1.5 text-[#059669] font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>{lastSaved}</span>
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -278,7 +332,7 @@ function AuthorEditorContent() {
           <Button
             variant="secondary"
             size="sm"
-            onClick={handleSaveDraft}
+            onClick={handleSaveDraftManual}
             disabled={isSaving || isSubmitting}
             className="gap-1.5"
           >
