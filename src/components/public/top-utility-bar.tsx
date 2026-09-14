@@ -1,9 +1,57 @@
-import React from "react";
+"use client";
+
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { TrendingUp, Mail } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { Mail } from "lucide-react";
 import { InstagramIcon, YoutubeIcon, FacebookIcon } from "@/components/ui/social-icons";
 
-export function TopUtilityBar() {
+export interface TrendingItem {
+  title: string;
+  slug: string;
+}
+
+interface TopUtilityBarProps {
+  initialTrending?: TrendingItem | null;
+}
+
+export function TopUtilityBar({ initialTrending }: TopUtilityBarProps) {
+  const [trending, setTrending] = useState<TrendingItem | null>(
+    initialTrending !== undefined ? initialTrending : null
+  );
+
+  useEffect(() => {
+    if (initialTrending !== undefined) {
+      setTrending(initialTrending);
+      return;
+    }
+
+    const fetchTrendingPost = async () => {
+      try {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("posts")
+          .select("title, slug")
+          .eq("status", "published")
+          .order("view_count", { ascending: false })
+          .order("published_at", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (data) {
+          setTrending({
+            title: data.title,
+            slug: data.slug,
+          });
+        }
+      } catch (err) {
+        console.warn("Gagal memuat berita trending:", err);
+      }
+    };
+
+    fetchTrendingPost();
+  }, [initialTrending]);
+
   const currentDate = new Intl.DateTimeFormat("id-ID", {
     weekday: "long",
     day: "numeric",
@@ -14,18 +62,26 @@ export function TopUtilityBar() {
   return (
     <div className="bg-[#F0F4F8] border-b border-[#E5E7EB] text-xs text-[#6B7280] py-1.5 px-4">
       <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
-        {/* Left: Trending News Ticker */}
+        {/* Left: Dynamic Trending News Ticker */}
         <div className="flex items-center gap-2 overflow-hidden">
-          <span className="inline-flex items-center gap-1 font-bold text-[#DC2626] uppercase text-[10px] tracking-wider shrink-0">
-            <span className="w-2 h-2 rounded-full bg-[#DC2626] animate-pulse" />
-            Trending:
-          </span>
-          <Link
-            href="/artikel/pelantikan-pengurus-baru-pilar-bangsa-2026"
-            className="truncate hover:text-[#005AE0] transition-colors font-medium text-[#111827]"
-          >
-            Pelantikan Pengurus Baru UKM Pilar Bangsa 2026: Merawat Nalar Kritis Pers Mahasiswa
-          </Link>
+          {trending ? (
+            <>
+              <span className="inline-flex items-center gap-1 font-bold text-[#DC2626] uppercase text-[10px] tracking-wider shrink-0">
+                <span className="w-2 h-2 rounded-full bg-[#DC2626] animate-pulse" />
+                Trending:
+              </span>
+              <Link
+                href={`/artikel/${trending.slug}`}
+                className="truncate hover:text-[#005AE0] transition-colors font-medium text-[#111827]"
+              >
+                {trending.title}
+              </Link>
+            </>
+          ) : (
+            <span className="truncate text-gray-500 font-medium text-[11px]">
+              Media Karya Mahasiswa & Pers Kampus UNTAG Banyuwangi
+            </span>
+          )}
         </div>
 
         {/* Right: Date & Social Media Links */}
@@ -49,9 +105,7 @@ export function TopUtilityBar() {
               className="hover:text-[#005AE0] transition-colors"
               aria-label="YouTube Pilar Bangsa"
             >
-              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-              </svg>
+              <YoutubeIcon className="w-3.5 h-3.5" />
             </a>
             <a
               href="https://facebook.com"
@@ -60,9 +114,7 @@ export function TopUtilityBar() {
               className="hover:text-[#005AE0] transition-colors"
               aria-label="Facebook Pilar Bangsa"
             >
-              <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-              </svg>
+              <FacebookIcon className="w-3.5 h-3.5" />
             </a>
             <a
               href="mailto:ukmpilarbangsa@gmail.com"

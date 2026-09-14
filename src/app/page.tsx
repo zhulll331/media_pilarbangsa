@@ -76,9 +76,13 @@ export default async function HomePage() {
   const popularPosts = [...publishedPosts].sort((a, b) => b.viewCount - a.viewCount);
   const editorChoicePosts = publishedPosts.filter((p) => featuredPost && p.id !== featuredPost.id);
 
+  const trendingItem = popularPosts[0]
+    ? { title: popularPosts[0].title, slug: popularPosts[0].slug }
+    : null;
+
   return (
     <div className="flex-1 flex flex-col min-h-screen">
-      <TopUtilityBar />
+      <TopUtilityBar initialTrending={trendingItem} />
       <Header />
       <Navbar />
 
