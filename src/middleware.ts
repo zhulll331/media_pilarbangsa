@@ -42,6 +42,17 @@ export async function middleware(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     const pathname = request.nextUrl.pathname;
+    const code = request.nextUrl.searchParams.get('code');
+
+    // Jika Supabase redirect kembali ke root /?code=... (karena Redirect URL belum di-whitelist di Dashboard),
+    // tangkap dan teruskan ke /auth/callback agar ditukarkan menjadi sesi login resmi.
+    if (code && !pathname.startsWith('/auth/callback')) {
+      const callbackUrl = new URL('/auth/callback', request.url);
+      callbackUrl.searchParams.set('code', code);
+      const next = request.nextUrl.searchParams.get('next');
+      if (next) callbackUrl.searchParams.set('next', next);
+      return NextResponse.redirect(callbackUrl);
+    }
 
     // 1. Proteksi Route /admin (kecuali /admin/login)
     if (pathname.startsWith('/admin') && pathname !== '/admin/login') {
