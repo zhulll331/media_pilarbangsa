@@ -33,6 +33,11 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
   },
+  icons: {
+    icon: "/images/logo_pilar.svg",
+    shortcut: "/images/logo_pilar.svg",
+    apple: "/images/logo_pilar.svg",
+  },
 };
 
 export default function RootLayout({
