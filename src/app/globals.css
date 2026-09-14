@@ -1,0 +1,167 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #005AE0;
+  --color-secondary: #1E3A8A;
+  --color-surface-light: #F0F4F8;
+  --color-surface-dark: #0B172A;
+  --color-text-primary: #111827;
+  --color-text-secondary: #6B7280;
+  --color-border: #E5E7EB;
+  --color-accent-red: #DC2626;
+
+  /* Status Colors for Submissions & Reviews - Distinct from Primary */
+  --color-status-draft: #6B7280;
+  --color-status-pending: #D97706;
+  --color-status-published: #059669;
+  --color-status-rejected: #DC2626;
+
+  --font-inter: var(--font-inter, Inter, sans-serif);
+}
+
+:root {
+  --background: #FFFFFF;
+  --foreground: #111827;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  overflow-x: hidden;
+}
+
+/* Tabular figures for aligned numerical data (view count, rankings, admin tables) */
+.data-tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Editorial Drop Cap for first paragraph of articles */
+.drop-cap > p:first-of-type::first-letter {
+  font-size: 3.5rem;
+  line-height: 0.9;
+  font-weight: 700;
+  color: #005AE0;
+  float: left;
+  margin-right: 0.6rem;
+  margin-top: 0.15rem;
+}
+
+/* Subtle focus ring style */
+.focus-ring {
+  outline: none;
+}
+.focus-ring:focus-visible {
+  outline: 2px solid #005AE0;
+  outline-offset: 2px;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* TipTap WYSIWYG Rich Text Editor Styling */
+.tiptap.ProseMirror {
+  outline: none;
+  min-height: 420px;
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: #111827;
+}
+
+.tiptap.ProseMirror p {
+  margin-bottom: 1.15rem;
+}
+
+.tiptap.ProseMirror h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #0F172A;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+}
+
+.tiptap.ProseMirror h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1E293B;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.35;
+}
+
+.tiptap.ProseMirror blockquote {
+  border-left: 4px solid #005AE0;
+  padding-left: 1.25rem;
+  margin: 1.5rem 0;
+  font-style: italic;
+  color: #334155;
+  background-color: #F8FAFC;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.tiptap.ProseMirror ul {
+  list-style-type: disc;
+  padding-left: 1.75rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.tiptap.ProseMirror ol {
+  list-style-type: decimal;
+  padding-left: 1.75rem;
+  margin: 1rem 0 1.25rem;
+}
+
+.tiptap.ProseMirror li {
+  margin-bottom: 0.4rem;
+}
+
+.tiptap.ProseMirror li p {
+  margin-bottom: 0;
+}
+
+.tiptap.ProseMirror u {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tiptap.ProseMirror strong {
+  font-weight: 700;
+  color: #0F172A;
+}
+
+.tiptap.ProseMirror em {
+  font-style: italic;
+}
+
+.tiptap.ProseMirror a {
+  color: #005AE0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.tiptap.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 1.5rem 0;
+  border: 1px solid #E2E8F0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.tiptap.ProseMirror p.is-editor-empty:first-child::before {
+  color: #9CA3AF;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
