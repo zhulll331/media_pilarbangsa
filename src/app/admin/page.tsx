@@ -145,7 +145,8 @@ export default function AdminReviewQueuePage() {
 
       {/* Pending Queue Table */}
       <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-[#F0F4F8] border-b border-[#E5E7EB] text-[#6B7280] font-semibold uppercase tracking-wider">
@@ -247,6 +248,89 @@ export default function AdminReviewQueuePage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile Card List View */}
+        <div className="block md:hidden divide-y divide-[#E5E7EB]">
+          {posts.length === 0 ? (
+            <div className="py-12 px-4 text-center text-[#6B7280]">
+              <CheckCircle2 className="w-10 h-10 text-[#059669] mx-auto mb-2 opacity-80" />
+              <p className="text-sm font-semibold text-[#111827]">
+                Semua antrean telah ditinjau!
+              </p>
+              <p className="text-xs text-[#6B7280]">
+                Tidak ada naskah baru yang menunggu keputusan kurasi saat ini.
+              </p>
+            </div>
+          ) : (
+            posts.map((post) => (
+              <div key={post.id} className="p-4 space-y-3">
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex-1 min-w-0">
+                    <span className="font-bold text-sm text-[#111827] block leading-snug">
+                      {post.title}
+                    </span>
+                    {post.excerpt && (
+                      <p className="text-xs text-[#6B7280] line-clamp-2 mt-1">
+                        {post.excerpt}
+                      </p>
+                    )}
+                  </div>
+                  <div className="shrink-0 pt-0.5">
+                    <BadgeStatus status="pending" />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-xs text-[#6B7280]">
+                  <div className="flex items-center gap-2">
+                    <Avatar src={post.author.avatar} name={post.author.name} size="sm" />
+                    <span className="font-semibold text-[#111827]">{post.author.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="px-2 py-0.5 rounded-full bg-gray-100 font-medium">
+                      {post.category.name}
+                    </span>
+                    <span>•</span>
+                    <span>{formatDate(post.createdAt)}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-gray-100">
+                  <button
+                    onClick={() => setPreviewPost(post)}
+                    className="px-3 py-1.5 rounded-full border border-[#E5E7EB] text-[#111827] hover:border-[#005AE0] hover:text-[#005AE0] font-semibold text-xs transition-colors cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <Eye className="w-3.5 h-3.5" />
+                    <span>Baca</span>
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      setRejectingPost(post);
+                      setRejectionNote("");
+                    }}
+                    className="px-3 py-1.5 rounded-full border border-[#DC2626] text-[#DC2626] hover:bg-red-50 font-semibold text-xs transition-colors cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Reject</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleApprove(post.id)}
+                    disabled={actionLoading === post.id}
+                    className="px-3 py-1.5 rounded-full bg-[#059669] hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer inline-flex items-center gap-1 disabled:opacity-60"
+                  >
+                    {actionLoading === post.id ? (
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                    )}
+                    <span>Approve</span>
+                  </button>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 

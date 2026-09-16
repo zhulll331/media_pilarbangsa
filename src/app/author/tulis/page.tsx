@@ -318,7 +318,7 @@ function AuthorEditorContent() {
         </div>
 
         {/* Action Buttons: Simpan Draft + Kirim ke Editor */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           <Button
             variant="secondary"
             size="sm"
@@ -352,8 +352,8 @@ function AuthorEditorContent() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Left: Main Writing Canvas (8 cols) */}
-        <div className="lg:col-span-8 space-y-4">
+        {/* Left: Main Writing Canvas (8 cols) - Appears first on mobile */}
+        <div className="lg:col-span-8 space-y-4 order-1 lg:order-none">
           {/* Article Title Input */}
           <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#E5E7EB] shadow-xs space-y-2">
             <div className="flex items-center justify-between">
@@ -382,8 +382,8 @@ function AuthorEditorContent() {
           />
         </div>
 
-        {/* Right: Metadata, Cover, & Settings (4 cols) */}
-        <div className="lg:col-span-4 space-y-5">
+        {/* Right: Metadata, Cover, & Settings (4 cols) - Appears below editor on mobile */}
+        <div className="lg:col-span-4 space-y-5 order-2 lg:order-none">
           {/* Cover Image Box */}
           <div className="bg-white p-5 rounded-2xl border border-[#E5E7EB] shadow-xs space-y-3">
             <span className="text-xs font-bold uppercase tracking-wider text-[#111827] block">

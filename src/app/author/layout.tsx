@@ -57,7 +57,7 @@ export default function AuthorLayout({
   return (
     <div className="min-h-screen bg-[#F0F4F8] flex flex-col md:flex-row">
       {/* Mobile Topbar */}
-      <header className="md:hidden bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between sticky top-9 z-30">
+      <header className="md:hidden bg-white border-b border-[#E5E7EB] px-4 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-2.5">
           <img
             src="/images/logo_pilar.svg"

@@ -148,7 +148,8 @@ export default async function AuthorDashboardPage() {
           </Link>
         </div>
 
-        <div className="overflow-x-auto">
+        {/* Desktop View Table */}
+        <div className="hidden md:block overflow-x-auto">
           <table className="w-full text-left border-collapse text-xs">
             <thead>
               <tr className="bg-[#F0F4F8] border-b border-[#E5E7EB] text-[#6B7280] font-semibold uppercase tracking-wider">
@@ -211,6 +212,61 @@ export default async function AuthorDashboardPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile View Card List */}
+        <div className="block md:hidden divide-y divide-[#E5E7EB]">
+          {recentPosts.length === 0 ? (
+            <div className="py-8 px-4 text-center text-xs text-[#6B7280]">
+              Belum ada tulisan. Klik tombol &quot;Tulis Naskah Baru&quot; untuk memulai!
+            </div>
+          ) : (
+            recentPosts.map((post) => (
+              <div key={post.id} className="p-4 space-y-2.5">
+                <div className="flex items-start justify-between gap-2.5">
+                  <div className="flex-1 min-w-0">
+                    <span className="font-semibold text-sm text-[#111827] block leading-snug">
+                      {post.title}
+                    </span>
+                    <div className="flex items-center gap-2 mt-1.5 text-xs text-[#6B7280]">
+                      <span className="font-medium">{post.category.name}</span>
+                      <span>•</span>
+                      <span>{formatDate(post.updatedAt)}</span>
+                    </div>
+                  </div>
+                  <div className="shrink-0 pt-0.5">
+                    <BadgeStatus status={post.status} />
+                  </div>
+                </div>
+
+                {post.status === "rejected" && post.rejectionNote && (
+                  <div className="text-xs text-[#DC2626] bg-red-50 p-2.5 rounded-lg border border-red-100">
+                    <strong>Catatan Redaksi:</strong> {post.rejectionNote}
+                  </div>
+                )}
+
+                <div className="pt-1 flex items-center justify-end">
+                  {post.status === "published" ? (
+                    <Link
+                      href={`/artikel/${post.slug}`}
+                      className="inline-flex items-center gap-1 text-xs text-[#005AE0] hover:underline font-semibold py-1"
+                    >
+                      <span>Lihat Artikel</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </Link>
+                  ) : (
+                    <Link
+                      href={`/author/tulis?id=${post.id}`}
+                      className="inline-flex items-center gap-1 text-xs text-[#005AE0] hover:underline font-semibold py-1"
+                    >
+                      <span>Edit / Tinjau Naskah</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </Link>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>

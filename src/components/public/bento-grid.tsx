@@ -41,7 +41,7 @@ export function BentoGrid({ posts }: BentoGridProps) {
           {/* Card 1: Large Featured Bento Card (7 cols) */}
           <Link
             href={`/artikel/${lead.slug}`}
-            className="md:col-span-7 group relative rounded-2xl overflow-hidden bg-[#0B172A] min-h-[360px] flex flex-col justify-end p-6 sm:p-8 shadow-xs hover:shadow-md transition-all"
+            className="md:col-span-7 group relative rounded-2xl overflow-hidden bg-[#0B172A] min-h-[280px] md:min-h-[360px] flex flex-col justify-end p-5 sm:p-8 shadow-xs hover:shadow-md transition-all"
           >
             <img
               src={lead.coverImage}
@@ -72,10 +72,10 @@ export function BentoGrid({ posts }: BentoGridProps) {
               <Link
                 key={post.id}
                 href={`/artikel/${post.slug}`}
-                className="group flex items-center gap-4 p-4 rounded-xl border border-[#E5E7EB] bg-white hover:border-[#005AE0] hover:shadow-sm transition-all"
+                className="group flex items-center gap-3.5 sm:gap-4 p-3.5 sm:p-4 rounded-xl border border-[#E5E7EB] bg-white hover:border-[#005AE0] hover:shadow-sm transition-all"
               >
                 {/* Thumbnail */}
-                <div className="relative w-24 h-24 sm:w-28 sm:h-24 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                <div className="relative w-20 h-20 sm:w-28 sm:h-24 rounded-lg overflow-hidden shrink-0 bg-gray-100">
                   <img
                     src={post.coverImage}
                     alt={post.title}

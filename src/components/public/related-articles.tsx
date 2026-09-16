@@ -20,7 +20,7 @@ export function RelatedArticles({ currentPostId, categoryId, posts }: RelatedArt
   if (related.length === 0) return null;
 
   return (
-    <aside className="sticky top-20 bg-[#F0F4F8] border border-[#E5E7EB] rounded-2xl p-6">
+    <aside className="md:sticky md:top-24 bg-[#F0F4F8] border border-[#E5E7EB] rounded-2xl p-5 sm:p-6">
       <div className="flex items-center gap-2 mb-4 pb-3 border-b border-[#E5E7EB]">
         <BookOpen className="w-4 h-4 text-[#005AE0]" />
         <h3 className="text-sm font-bold uppercase tracking-wider text-[#111827]">

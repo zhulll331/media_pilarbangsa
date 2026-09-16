@@ -182,105 +182,190 @@ export default function AuthorArticlesPage() {
             <Loader2 className="w-8 h-8 animate-spin text-[#005AE0]" />
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-[#F0F4F8] border-b border-[#E5E7EB] text-[#6B7280] font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-4">Judul & Catatan Revisi</th>
-                  <th className="py-3 px-4">Rubrik</th>
-                  <th className="py-3 px-4">Status</th>
-                  <th className="py-3 px-4">Pembaca</th>
-                  <th className="py-3 px-4">Pembaruan Terakhir</th>
-                  <th className="py-3 px-4 text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#E5E7EB]">
-                {filteredPosts.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-[#6B7280]">
-                      Tidak ada naskah yang sesuai dengan kriteria filter saat ini.
-                    </td>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead>
+                  <tr className="bg-[#F0F4F8] border-b border-[#E5E7EB] text-[#6B7280] font-semibold uppercase tracking-wider">
+                    <th className="py-3 px-4">Judul & Catatan Revisi</th>
+                    <th className="py-3 px-4">Rubrik</th>
+                    <th className="py-3 px-4">Status</th>
+                    <th className="py-3 px-4">Pembaca</th>
+                    <th className="py-3 px-4">Pembaruan Terakhir</th>
+                    <th className="py-3 px-4 text-right">Aksi</th>
                   </tr>
-                ) : (
-                  filteredPosts.map((post) => (
-                    <tr key={post.id} className="hover:bg-[#F0F4F8]/50 transition-colors">
-                      <td className="py-4 px-4 max-w-sm">
-                        <span className="font-bold text-sm text-[#111827] block mb-1">
-                          {post.title}
-                        </span>
-                        <p className="text-xs text-[#6B7280] line-clamp-1 mb-1">
-                          {post.excerpt}
-                        </p>
-
-                        {post.status === "rejected" && post.rejectionNote && (
-                          <div className="mt-2 p-2.5 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
-                            <div className="text-xs text-red-900 leading-relaxed">
-                              <span className="font-bold text-[#DC2626] block">
-                                Catatan Revisi dari Editor:
-                              </span>
-                              {post.rejectionNote}
-                            </div>
-                          </div>
-                        )}
-                      </td>
-
-                      <td className="py-4 px-4 text-[#6B7280] whitespace-nowrap">
-                        {post.category.name}
-                      </td>
-
-                      <td className="py-4 px-4 whitespace-nowrap">
-                        <BadgeStatus status={post.status} />
-                      </td>
-
-                      <td className="py-4 px-4 text-[#111827] font-semibold data-tabular whitespace-nowrap">
-                        {formatNumber(post.viewCount)}
-                      </td>
-
-                      <td className="py-4 px-4 text-[#6B7280] whitespace-nowrap">
-                        {post.updatedAt ? formatDate(post.updatedAt) : "-"}
-                      </td>
-
-                      <td className="py-4 px-4 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-2">
-                          {post.status === "published" ? (
-                            <Link
-                              href={`/artikel/${post.slug}`}
-                              className="p-1.5 text-gray-500 hover:text-[#005AE0] rounded transition-colors"
-                              title="Buka Halaman Artikel"
-                            >
-                              <ExternalLink className="w-4 h-4" />
-                            </Link>
-                          ) : (
-                            <Link
-                              href={`/author/tulis?id=${post.id}`}
-                              className="p-1.5 text-gray-500 hover:text-[#005AE0] rounded transition-colors"
-                              title="Lanjutkan Menulis / Edit"
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Link>
-                          )}
-
-                          <button
-                            disabled={deletingId === post.id}
-                            onClick={() => handleDelete(post.id)}
-                            className="p-1.5 text-gray-400 hover:text-red-600 rounded transition-colors cursor-pointer disabled:opacity-50"
-                            title="Hapus Naskah"
-                          >
-                            {deletingId === post.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <Trash2 className="w-4 h-4" />
-                            )}
-                          </button>
-                        </div>
+                </thead>
+                <tbody className="divide-y divide-[#E5E7EB]">
+                  {filteredPosts.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-[#6B7280]">
+                        Tidak ada naskah yang sesuai dengan kriteria filter saat ini.
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
+                  ) : (
+                    filteredPosts.map((post) => (
+                      <tr key={post.id} className="hover:bg-[#F0F4F8]/50 transition-colors">
+                        <td className="py-4 px-4 max-w-sm">
+                          <span className="font-bold text-sm text-[#111827] block mb-1">
+                            {post.title}
+                          </span>
+                          <p className="text-xs text-[#6B7280] line-clamp-1 mb-1">
+                            {post.excerpt}
+                          </p>
+
+                          {post.status === "rejected" && post.rejectionNote && (
+                            <div className="mt-2 p-2.5 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2">
+                              <AlertCircle className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
+                              <div className="text-xs text-red-900 leading-relaxed">
+                                <span className="font-bold text-[#DC2626] block">
+                                  Catatan Revisi dari Editor:
+                                </span>
+                                {post.rejectionNote}
+                              </div>
+                            </div>
+                          )}
+                        </td>
+
+                        <td className="py-4 px-4 text-[#6B7280] whitespace-nowrap">
+                          {post.category.name}
+                        </td>
+
+                        <td className="py-4 px-4 whitespace-nowrap">
+                          <BadgeStatus status={post.status} />
+                        </td>
+
+                        <td className="py-4 px-4 text-[#111827] font-semibold data-tabular whitespace-nowrap">
+                          {formatNumber(post.viewCount)}
+                        </td>
+
+                        <td className="py-4 px-4 text-[#6B7280] whitespace-nowrap">
+                          {post.updatedAt ? formatDate(post.updatedAt) : "-"}
+                        </td>
+
+                        <td className="py-4 px-4 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-2">
+                            {post.status === "published" ? (
+                              <Link
+                                href={`/artikel/${post.slug}`}
+                                className="p-1.5 text-gray-500 hover:text-[#005AE0] rounded transition-colors"
+                                title="Buka Halaman Artikel"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Link>
+                            ) : (
+                              <Link
+                                href={`/author/tulis?id=${post.id}`}
+                                className="p-1.5 text-gray-500 hover:text-[#005AE0] rounded transition-colors"
+                                title="Lanjutkan Menulis / Edit"
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Link>
+                            )}
+
+                            <button
+                              disabled={deletingId === post.id}
+                              onClick={() => handleDelete(post.id)}
+                              className="p-1.5 text-gray-400 hover:text-red-600 rounded transition-colors cursor-pointer disabled:opacity-50"
+                              title="Hapus Naskah"
+                            >
+                              {deletingId === post.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="w-4 h-4" />
+                              )}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Card List View */}
+            <div className="block md:hidden divide-y divide-[#E5E7EB]">
+              {filteredPosts.length === 0 ? (
+                <div className="py-12 px-4 text-center text-xs text-[#6B7280]">
+                  Tidak ada naskah yang sesuai dengan kriteria filter saat ini.
+                </div>
+              ) : (
+                filteredPosts.map((post) => (
+                  <div key={post.id} className="p-4 space-y-3">
+                    <div className="flex items-start justify-between gap-2.5">
+                      <div className="flex-1 min-w-0">
+                        <span className="font-bold text-sm text-[#111827] block leading-snug">
+                          {post.title}
+                        </span>
+                        {post.excerpt && (
+                          <p className="text-xs text-[#6B7280] line-clamp-2 mt-1">
+                            {post.excerpt}
+                          </p>
+                        )}
+                      </div>
+                      <div className="shrink-0 pt-0.5">
+                        <BadgeStatus status={post.status} />
+                      </div>
+                    </div>
+
+                    {post.status === "rejected" && post.rejectionNote && (
+                      <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 flex items-start gap-2 text-xs text-red-900 leading-relaxed">
+                        <AlertCircle className="w-4 h-4 text-[#DC2626] shrink-0 mt-0.5" />
+                        <div>
+                          <span className="font-bold text-[#DC2626] block">
+                            Catatan Revisi dari Editor:
+                          </span>
+                          {post.rejectionNote}
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-gray-100 text-xs text-[#6B7280]">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium text-[#111827]">{post.category.name}</span>
+                        <span>•</span>
+                        <span className="data-tabular">{formatNumber(post.viewCount)} baca</span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {post.status === "published" ? (
+                          <Link
+                            href={`/artikel/${post.slug}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#005AE0] hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <span>Lihat</span>
+                            <ExternalLink className="w-3.5 h-3.5" />
+                          </Link>
+                        ) : (
+                          <Link
+                            href={`/author/tulis?id=${post.id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#005AE0] hover:bg-blue-50 rounded-lg transition-colors"
+                          >
+                            <span>Edit</span>
+                            <Edit className="w-3.5 h-3.5" />
+                          </Link>
+                        )}
+
+                        <button
+                          disabled={deletingId === post.id}
+                          onClick={() => handleDelete(post.id)}
+                          className="p-1.5 text-gray-400 hover:text-red-600 rounded transition-colors cursor-pointer disabled:opacity-50"
+                          title="Hapus Naskah"
+                        >
+                          {deletingId === post.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </>
         )}
       </div>
     </div>

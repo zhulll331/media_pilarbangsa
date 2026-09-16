@@ -21,7 +21,7 @@ export function HeroSection({ featuredPost, popularPosts }: HeroSectionProps) {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-stretch">
           {/* Main Hero: 8 Columns */}
           <div className="lg:col-span-8 flex flex-col">
-            <div className="relative rounded-2xl overflow-hidden group bg-[#0B172A] flex-1 flex flex-col justify-end min-h-[420px] sm:min-h-[480px] shadow-sm">
+            <div className="relative rounded-2xl overflow-hidden group bg-[#0B172A] flex-1 flex flex-col justify-end min-h-[300px] sm:min-h-[420px] lg:min-h-[480px] shadow-sm">
               {/* Background Cover Image with Hover Scale */}
               <img
                 src={featuredPost.coverImage}
@@ -33,7 +33,7 @@ export function HeroSection({ featuredPost, popularPosts }: HeroSectionProps) {
               <div className="absolute inset-0 bg-gradient-to-t from-[#0B172A] via-[#0B172A]/70 to-transparent" />
 
               {/* Hero Content Area */}
-              <div className="relative z-10 p-6 sm:p-8 lg:p-10 flex flex-col gap-3.5">
+              <div className="relative z-10 p-5 sm:p-8 lg:p-10 flex flex-col gap-3.5">
                 <div className="flex items-center gap-2.5">
                   <CategoryBadge>{featuredPost.category.name}</CategoryBadge>
                   <span className="text-white/80 text-xs font-medium">

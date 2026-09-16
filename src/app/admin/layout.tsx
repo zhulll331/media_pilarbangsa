@@ -71,7 +71,7 @@ export default function AdminLayout({
   return (
     <div className="min-h-screen bg-[#F0F4F8] flex flex-col md:flex-row">
       {/* Mobile Topbar */}
-      <header className="md:hidden bg-[#0B172A] text-white px-4 py-3 flex items-center justify-between sticky top-9 z-30">
+      <header className="md:hidden bg-[#0B172A] text-white px-4 py-3 flex items-center justify-between sticky top-0 z-30">
         <div className="flex items-center gap-2.5">
           <ShieldCheck className="w-6 h-6 text-amber-400" />
           <span className="font-bold text-sm">PANEL REDAKSI & KURASI</span>

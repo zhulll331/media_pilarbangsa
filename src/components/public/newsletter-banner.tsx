@@ -24,7 +24,7 @@ export function NewsletterBanner() {
   return (
     <section id="newsletter" className="py-12 sm:py-16">
       <div className="max-w-7xl mx-auto px-4">
-        <div className="bg-[#F0F4F8] border border-[#E5E7EB] rounded-3xl p-8 sm:p-12 lg:p-16 relative overflow-hidden">
+        <div className="bg-[#F0F4F8] border border-[#E5E7EB] rounded-2xl sm:rounded-3xl p-6 sm:p-12 lg:p-16 relative overflow-hidden">
           {/* Subtle background decoration */}
           <div className="absolute -top-24 -right-24 w-96 h-96 bg-blue-100 rounded-full blur-3xl pointer-events-none opacity-60" />
 
