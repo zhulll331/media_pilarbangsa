@@ -60,7 +60,7 @@ export default function AuthorArticlesPage() {
           categoryId: p.category_id,
           category: p.category || { id: "", name: "Umum", slug: "umum" },
           tags: [],
-          status: p.status,
+          status: (p.status === "pending_review" ? "pending" : p.status) as Post["status"],
           publishedAt: p.published_at,
           createdAt: p.created_at,
           updatedAt: p.updated_at,

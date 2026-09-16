@@ -48,7 +48,7 @@ export default async function AuthorDashboardPage() {
     title: p.title,
     slug: p.slug,
     excerpt: p.excerpt || "",
-    status: p.status as "draft" | "pending" | "published" | "rejected",
+    status: (p.status === "pending_review" ? "pending" : p.status) as "draft" | "pending" | "published" | "rejected",
     rejectionNote: p.rejection_note,
     updatedAt: p.updated_at || p.created_at,
     viewCount: p.view_count || 0,

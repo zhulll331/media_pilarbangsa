@@ -220,7 +220,7 @@ function AuthorEditorContent() {
         targetPostId = createRes.post.id;
         setCurrentPostId(targetPostId);
       } else {
-        await updateDraft(targetPostId, {
+        const updateRes = await updateDraft(targetPostId, {
           title,
           excerpt: excerpt || title,
           content,
@@ -228,6 +228,11 @@ function AuthorEditorContent() {
           coverImage,
           tagIds: selectedTags,
         });
+        if (updateRes?.error) {
+          showToast(updateRes.error, "error");
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       if (!targetPostId) {

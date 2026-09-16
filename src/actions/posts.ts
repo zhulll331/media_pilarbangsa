@@ -6,6 +6,7 @@ import { slugify } from '@/lib/utils';
 import { revalidatePath } from 'next/cache';
 import {
   sendNewSubmissionEmailToAdmin,
+  sendSubmissionReceivedEmailToAuthor,
   sendPostApprovedEmailToAuthor,
   sendPostRejectedEmailToAuthor,
 } from '@/lib/email/templates';
@@ -218,20 +219,39 @@ export async function submitForReview(postId: string) {
     .eq('id', user.id)
     .single();
 
-  const authorName = profile?.full_name || user.email || 'Penulis Mahasiswa';
+  const authorName = profile?.full_name || user.user_metadata?.full_name || user.email || 'Penulis Mahasiswa';
   const categoryName = (post.category as any)?.name;
 
-  // Kirim email notifikasi ke redaksi
-  await sendNewSubmissionEmailToAdmin({
-    postTitle: post.title,
-    authorName,
-    categoryName,
-    postId,
-  });
+  // Kirim email notifikasi ke redaksi & konfirmasi ke penulis
+  try {
+    await sendNewSubmissionEmailToAdmin({
+      postTitle: post.title,
+      authorName,
+      categoryName,
+      postId,
+    });
+  } catch (emailErr) {
+    console.error('[EMAIL] Gagal memanggil sendNewSubmissionEmailToAdmin:', emailErr);
+  }
+
+  if (user.email) {
+    try {
+      await sendSubmissionReceivedEmailToAuthor({
+        authorEmail: user.email,
+        authorName,
+        postTitle: post.title,
+        postId,
+        categoryName,
+      });
+    } catch (emailErr) {
+      console.error('[EMAIL] Gagal memanggil sendSubmissionReceivedEmailToAuthor:', emailErr);
+    }
+  }
 
   revalidatePath('/author');
   revalidatePath('/author/tulisan');
   revalidatePath('/admin');
+  revalidatePath('/admin/naskah');
 
   return { success: true };
 }
@@ -292,20 +312,24 @@ export async function approvePost(postId: string) {
 
   // Kirim email ke penulis jika ada auth user info
   if (post.author_id) {
-    const { data: authorUser } = await adminClient.auth.admin.getUserById(post.author_id);
-    const { data: authorProfile } = await adminClient
-      .from('profiles')
-      .select('full_name')
-      .eq('id', post.author_id)
-      .single();
+    try {
+      const { data: authorUser } = await adminClient.auth.admin.getUserById(post.author_id);
+      const { data: authorProfile } = await adminClient
+        .from('profiles')
+        .select('full_name')
+        .eq('id', post.author_id)
+        .single();
 
-    if (authorUser?.user?.email) {
-      await sendPostApprovedEmailToAuthor({
-        authorEmail: authorUser.user.email,
-        authorName: authorProfile?.full_name || 'Penulis',
-        postTitle: post.title,
-        postSlug: post.slug,
-      });
+      if (authorUser?.user?.email) {
+        await sendPostApprovedEmailToAuthor({
+          authorEmail: authorUser.user.email,
+          authorName: authorProfile?.full_name || authorUser.user.user_metadata?.full_name || 'Penulis',
+          postTitle: post.title,
+          postSlug: post.slug,
+        });
+      }
+    } catch (emailErr) {
+      console.error('[EMAIL] Gagal memanggil sendPostApprovedEmailToAuthor:', emailErr);
     }
   }
 
@@ -375,21 +399,25 @@ export async function rejectPost(postId: string, note: string) {
 
   // Kirim email notifikasi ke penulis
   if (post.author_id) {
-    const { data: authorUser } = await adminClient.auth.admin.getUserById(post.author_id);
-    const { data: authorProfile } = await adminClient
-      .from('profiles')
-      .select('full_name')
-      .eq('id', post.author_id)
-      .single();
+    try {
+      const { data: authorUser } = await adminClient.auth.admin.getUserById(post.author_id);
+      const { data: authorProfile } = await adminClient
+        .from('profiles')
+        .select('full_name')
+        .eq('id', post.author_id)
+        .single();
 
-    if (authorUser?.user?.email) {
-      await sendPostRejectedEmailToAuthor({
-        authorEmail: authorUser.user.email,
-        authorName: authorProfile?.full_name || 'Penulis',
-        postTitle: post.title,
-        postId: post.id,
-        note: note.trim(),
-      });
+      if (authorUser?.user?.email) {
+        await sendPostRejectedEmailToAuthor({
+          authorEmail: authorUser.user.email,
+          authorName: authorProfile?.full_name || authorUser.user.user_metadata?.full_name || 'Penulis',
+          postTitle: post.title,
+          postId: post.id,
+          note: note.trim(),
+        });
+      }
+    } catch (emailErr) {
+      console.error('[EMAIL] Gagal memanggil sendPostRejectedEmailToAuthor:', emailErr);
     }
   }
 
