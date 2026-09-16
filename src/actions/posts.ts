@@ -23,6 +23,57 @@ function sanitizeHtml(html: string): string {
     .replace(/javascript\s*:/gi, '');
 }
 
+async function processBase64ImagesInHtml(html: string, userId: string): Promise<string> {
+  if (!html || !html.includes('data:image/')) return html;
+
+  try {
+    const adminClient = createAdminClient();
+    const base64Regex = /data:image\/([a-zA-Z0-9.+]+);base64,([A-Za-z0-9+/=]+)/g;
+
+    let match;
+    let newHtml = html;
+    const items: { dataUrl: string; mimeType: string; base64Data: string }[] = [];
+
+    while ((match = base64Regex.exec(html)) !== null) {
+      items.push({
+        dataUrl: match[0],
+        mimeType: match[1],
+        base64Data: match[2],
+      });
+    }
+
+    for (const item of items) {
+      try {
+        const buffer = Buffer.from(item.base64Data, 'base64');
+        const ext = item.mimeType === 'jpeg' ? 'jpg' : item.mimeType;
+        const filePath = `${userId}/editor-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
+
+        const { error: uploadErr } = await adminClient.storage
+          .from('post-covers')
+          .upload(filePath, buffer, {
+            contentType: `image/${item.mimeType}`,
+            upsert: true,
+          });
+
+        if (!uploadErr) {
+          const { data: { publicUrl } } = adminClient.storage
+            .from('post-covers')
+            .getPublicUrl(filePath);
+
+          newHtml = newHtml.replace(item.dataUrl, publicUrl);
+        }
+      } catch (err) {
+        console.error('Gagal convert base64 image:', err);
+      }
+    }
+
+    return newHtml;
+  } catch (err) {
+    console.error('Error in processBase64ImagesInHtml:', err);
+    return html;
+  }
+}
+
 export async function createDraft(data: {
   title: string;
   excerpt?: string;
@@ -39,7 +90,7 @@ export async function createDraft(data: {
       return { error: 'Anda harus masuk terlebih dahulu.' };
     }
 
-    const cleanContent = sanitizeHtml(data.content || '');
+    const cleanContent = await processBase64ImagesInHtml(sanitizeHtml(data.content || ''), user.id);
     const baseSlug = slugify(data.title || 'draft');
     const uniqueSlug = `${baseSlug}-${Math.random().toString(36).substring(2, 7)}`;
     const categoryId = (data.categoryId && data.categoryId.trim() !== '') ? data.categoryId : null;
@@ -129,7 +180,7 @@ export async function updateDraft(
       updatePayload.excerpt = data.excerpt;
     }
     if (data.content !== undefined) {
-      updatePayload.content = sanitizeHtml(data.content);
+      updatePayload.content = await processBase64ImagesInHtml(sanitizeHtml(data.content), user.id);
     }
     if (data.categoryId !== undefined) {
       updatePayload.category_id = (data.categoryId && data.categoryId.trim() !== '') ? data.categoryId : null;

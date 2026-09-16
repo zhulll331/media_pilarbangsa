@@ -17,6 +17,7 @@ import {
 import { RichTextEditor } from "@/components/editor/rich-text-editor";
 import { uploadCoverImage } from "@/actions/profile";
 import { createDraft, updateDraft, submitForReview } from "@/actions/posts";
+import { compressImage, formatFileSize } from "@/lib/image-compression";
 import type { Category, Tag } from "@/lib/types";
 
 function AuthorEditorContent() {
@@ -104,20 +105,31 @@ function AuthorEditorContent() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const maxSize = 2 * 1024 * 1024; // 2MB limit
+    const maxSize = 10 * 1024 * 1024; // 10MB limit sebelum kompresi
     if (file.size > maxSize) {
-      showToast("Gagal: Ukuran gambar melebihi batas maksimal 2MB.", "error");
+      showToast("Gagal: Ukuran gambar melebihi batas maksimal 10MB.", "error");
       return;
     }
 
     setIsUploadingCover(true);
     try {
+      const originalSize = file.size;
+      // Otomatis kompresi gambar sampul: downscale max 1400px, kualitas 0.82 WebP (hemat storage)
+      const compressedFile = await compressImage(file, {
+        maxWidth: 1400,
+        quality: 0.82,
+        targetMimeType: "image/webp",
+      });
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedFile);
       const res = await uploadCoverImage(formData);
       if (res?.success && res.publicUrl) {
         setCoverImage(res.publicUrl);
-        showToast("Gambar sampul berhasil diunggah!", "success");
+        showToast(
+          `Gambar sampul berhasil diunggah & dioptimalkan (${formatFileSize(originalSize)} ➔ ${formatFileSize(compressedFile.size)})!`,
+          "success"
+        );
       } else {
         showToast(res?.error || "Gagal mengunggah gambar sampul.", "error");
       }

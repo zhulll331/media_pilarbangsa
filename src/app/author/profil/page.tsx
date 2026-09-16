@@ -5,6 +5,7 @@ import { usePortal } from "@/context/portal-context";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { updateProfile, uploadAvatar } from "@/actions/profile";
+import { compressImage } from "@/lib/image-compression";
 import { Save, Upload, Loader2 } from "lucide-react";
 
 export default function AuthorProfileSettingsPage() {
@@ -27,18 +28,26 @@ export default function AuthorProfileSettingsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      showToast("Gagal: Ukuran foto melebihi 2MB.", "error");
+    if (file.size > 5 * 1024 * 1024) {
+      showToast("Gagal: Ukuran foto melebihi batas 5MB.", "error");
       return;
     }
 
     try {
+      // Kompres avatar jadi WebP persegi berkualitas tajam (hemat hingga 95% storage)
+      const compressedFile = await compressImage(file, {
+        maxWidth: 400,
+        maxHeight: 400,
+        quality: 0.85,
+        targetMimeType: "image/webp",
+      });
+
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", compressedFile);
       const res = await uploadAvatar(formData);
       if (res.success && res.avatarUrl) {
         setAvatarUrl(res.avatarUrl);
-        showToast("Foto profil berhasil diperbarui!", "success");
+        showToast("Foto profil berhasil diperbarui & dioptimalkan!", "success");
         return;
       }
     } catch {

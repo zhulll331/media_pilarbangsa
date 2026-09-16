@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Underline from "@tiptap/extension-underline";
-import Link from "@tiptap/extension-link";
 import Image from "@tiptap/extension-image";
 import Placeholder from "@tiptap/extension-placeholder";
 import {
@@ -21,8 +19,11 @@ import {
   Image as ImageIcon,
   RotateCcw,
   RotateCw,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { compressImage } from "@/lib/image-compression";
+import { uploadEditorImage } from "@/actions/profile";
 
 interface RichTextEditorProps {
   content: string;
@@ -38,10 +39,58 @@ export function RichTextEditor({
   onImageLimitError,
 }: RichTextEditorProps) {
   const [isMounted, setIsMounted] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
   }, []);
+
+  const processAndInsertImage = async (file: File) => {
+    if (!editor) return;
+
+    if (!file.type.startsWith("image/")) {
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      // Otomatis kompresi gambar di browser: downscale max 1200px, WebP quality 0.8 (hemat ~90% storage)
+      const compressedFile = await compressImage(file, {
+        maxWidth: 1200,
+        quality: 0.8,
+        targetMimeType: "image/webp",
+      });
+
+      const formData = new FormData();
+      formData.append("file", compressedFile);
+
+      const res = await uploadEditorImage(formData);
+      if (res?.success && res.publicUrl) {
+        editor
+          .chain()
+          .focus()
+          .setImage({ src: res.publicUrl, alt: file.name.replace(/\.[^/.]+$/, "") })
+          .run();
+      } else {
+        const errorMsg = res?.error || "Gagal mengunggah gambar ke penyimpanan.";
+        if (onImageLimitError) {
+          onImageLimitError(errorMsg);
+        } else {
+          alert(errorMsg);
+        }
+      }
+    } catch (err: any) {
+      console.error("Gagal mengompres & mengunggah gambar editor:", err);
+      const errorMsg = "Terjadi kesalahan saat memproses kompresi gambar.";
+      if (onImageLimitError) {
+        onImageLimitError(errorMsg);
+      } else {
+        alert(errorMsg);
+      }
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
 
   const editor = useEditor({
     immediatelyRender: false,
@@ -50,12 +99,11 @@ export function RichTextEditor({
         heading: {
           levels: [2, 3],
         },
-      }),
-      Underline,
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: "text-[#005AE0] underline font-medium",
+        link: {
+          openOnClick: false,
+          HTMLAttributes: {
+            class: "text-[#005AE0] underline font-medium",
+          },
         },
       }),
       Image.configure({
@@ -72,6 +120,30 @@ export function RichTextEditor({
     editorProps: {
       attributes: {
         class: "tiptap ProseMirror p-5 sm:p-7 focus:outline-none min-h-[420px]",
+      },
+      handlePaste: (view, event) => {
+        const files = event.clipboardData?.files;
+        if (files && files.length > 0) {
+          const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"));
+          if (imageFile) {
+            event.preventDefault();
+            processAndInsertImage(imageFile);
+            return true;
+          }
+        }
+        return false;
+      },
+      handleDrop: (view, event) => {
+        const files = event.dataTransfer?.files;
+        if (files && files.length > 0) {
+          const imageFile = Array.from(files).find((f) => f.type.startsWith("image/"));
+          if (imageFile) {
+            event.preventDefault();
+            processAndInsertImage(imageFile);
+            return true;
+          }
+        }
+        return false;
       },
     },
     onUpdate: ({ editor }) => {
@@ -109,24 +181,7 @@ export function RichTextEditor({
     const file = e.target.files?.[0];
     if (!file || !editor) return;
 
-    // 2MB Limit per PRD §5.3
-    const maxSize = 2 * 1024 * 1024;
-    if (file.size > maxSize) {
-      if (onImageLimitError) {
-        onImageLimitError("Ukuran gambar melebihi batas 2MB (§5.3 PRD).");
-      } else {
-        alert("Ukuran gambar melebihi batas 2MB.");
-      }
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        editor.chain().focus().setImage({ src: reader.result, alt: file.name }).run();
-      }
-    };
-    reader.readAsDataURL(file);
+    processAndInsertImage(file);
     e.target.value = "";
   };
 
@@ -291,17 +346,31 @@ export function RichTextEditor({
 
           {/* Insert Image */}
           <label
-            className="p-1.5 sm:p-2 rounded-lg hover:bg-white text-gray-700 hover:text-[#005AE0] hover:shadow-xs transition-all cursor-pointer"
-            title="Unggah Gambar Naskah (Maks 2MB)"
+            className={cn(
+              "p-1.5 sm:p-2 rounded-lg hover:bg-white text-gray-700 hover:text-[#005AE0] hover:shadow-xs transition-all cursor-pointer flex items-center gap-1.5",
+              isUploadingImage && "opacity-50 cursor-not-allowed pointer-events-none"
+            )}
+            title="Unggah Gambar Naskah (Otomatis dikompresi WebP & hemat penyimpanan)"
           >
-            <ImageIcon className="w-4 h-4" />
+            {isUploadingImage ? (
+              <Loader2 className="w-4 h-4 animate-spin text-[#005AE0]" />
+            ) : (
+              <ImageIcon className="w-4 h-4" />
+            )}
             <input
               type="file"
               accept="image/*"
+              disabled={isUploadingImage}
               onChange={handleImageFile}
               className="sr-only"
             />
           </label>
+
+          {isUploadingImage && (
+            <span className="text-xs text-[#005AE0] font-medium animate-pulse hidden sm:inline-block">
+              Mengompres & mengunggah...
+            </span>
+          )}
 
           <div className="h-4 w-px bg-[#E5E7EB] mx-1" />
 

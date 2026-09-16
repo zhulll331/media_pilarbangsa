@@ -113,3 +113,45 @@ export async function uploadCoverImage(formData: FormData) {
 
   return { success: true, publicUrl };
 }
+
+export async function uploadEditorImage(formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { error: 'Harap masuk terlebih dahulu.' };
+  }
+
+  const file = formData.get('file') as File;
+  if (!file) {
+    return { error: 'File gambar tidak ditemukan.' };
+  }
+
+  // Maksimal 5MB (sebelum kompresi, walau hasil kompresi biasanya < 150KB)
+  if (file.size > 5 * 1024 * 1024) {
+    return { error: 'Ukuran gambar melebihi batas maksimal 5MB.' };
+  }
+
+  const fileExt = file.name.split('.').pop() || 'webp';
+  const filePath = `${user.id}/editor-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+
+  const adminClient = createAdminClient();
+  const { error: uploadError } = await adminClient.storage
+    .from('post-covers')
+    .upload(filePath, file, {
+      upsert: true,
+      contentType: file.type || 'image/webp',
+    });
+
+  if (uploadError) {
+    console.error('Editor image storage upload error:', uploadError);
+    return { error: uploadError.message };
+  }
+
+  const { data: { publicUrl } } = adminClient.storage
+    .from('post-covers')
+    .getPublicUrl(filePath);
+
+  return { success: true, publicUrl };
+}
+
