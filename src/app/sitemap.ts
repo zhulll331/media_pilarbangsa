@@ -35,7 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 1.0,
     },
     {
-      url: `${baseUrl}/kategori/berita-kampus`,
+      url: `${baseUrl}/kategori/berita-ukm`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
@@ -53,13 +53,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/kategori/reportase`,
+      url: `${baseUrl}/kategori/cerpen`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
     },
     {
-      url: `${baseUrl}/kategori/ilmu-pengetahuan`,
+      url: `${baseUrl}/kategori/puisi`,
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
@@ -69,6 +69,24 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: new Date(),
       changeFrequency: 'daily',
       priority: 0.8,
+    },
+    {
+      url: `${baseUrl}/tentang`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/redaksi`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
+      url: `${baseUrl}/pedoman-media-siber`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
     },
     {
       url: `${baseUrl}/login`,
