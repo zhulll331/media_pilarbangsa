@@ -244,26 +244,39 @@ export function HeroSection({ featuredPost, featuredPosts, popularPosts }: HeroS
                 </span>
               </div>
 
-              {/* 5 Popular Items List */}
-              <div className="flex flex-col divide-y divide-white/10 flex-1 justify-between">
+              {/* Popular Items List */}
+              <div className="flex flex-col divide-y divide-white/10">
                 {popularPosts.slice(0, 5).map((post, index) => (
                   <Link
                     key={post.id}
                     href={`/artikel/${post.slug}`}
-                    className="py-3 group flex items-start gap-3.5 hover:bg-white/5 px-2.5 rounded-lg transition-colors"
+                    className="py-3 group flex items-center gap-3 hover:bg-white/5 px-2 rounded-xl transition-colors"
                   >
                     {/* Ranking Number */}
-                    <span className="text-2xl font-black text-gray-500 group-hover:text-[#005AE0] transition-colors leading-none shrink-0 data-tabular w-6">
+                    <span className="text-xl font-black text-gray-500 group-hover:text-[#005AE0] transition-colors leading-none shrink-0 data-tabular w-5 text-center">
                       0{index + 1}
                     </span>
 
+                    {/* Small Thumbnail */}
+                    {post.coverImage && (
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden shrink-0 bg-gray-800 relative">
+                        <img
+                          src={post.coverImage}
+                          alt={post.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    )}
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 text-[11px] text-gray-400 mb-1">
-                        <span className="text-blue-400 font-semibold">{post.category.name}</span>
+                        <span className="text-blue-400 font-semibold truncate max-w-[110px]">
+                          {post.category?.name || "Umum"}
+                        </span>
                         <span>•</span>
                         <span className="flex items-center gap-1 data-tabular">
                           <Eye className="w-3 h-3 text-gray-400" />
-                          {formatNumber(post.viewCount)}
+                          {formatNumber(post.viewCount || 0)}
                         </span>
                       </div>
                       <h3 className="text-xs sm:text-sm font-semibold text-gray-100 group-hover:text-blue-300 transition-colors line-clamp-2 leading-snug">
@@ -272,6 +285,18 @@ export function HeroSection({ featuredPost, featuredPosts, popularPosts }: HeroS
                     </div>
                   </Link>
                 ))}
+              </div>
+
+              {/* Bottom Quick Link */}
+              <div className="pt-3 mt-auto border-t border-white/10 flex items-center justify-between text-xs text-gray-400">
+                <span>Update berkala redaksi</span>
+                <Link
+                  href="/cari"
+                  className="text-blue-400 hover:text-blue-300 font-semibold inline-flex items-center gap-1 transition-colors"
+                >
+                  <span>Lihat Semua</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
               </div>
             </div>
           </div>
