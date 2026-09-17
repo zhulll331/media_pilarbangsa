@@ -33,6 +33,7 @@ export function Navbar() {
               <li key={item.name}>
                 <Link
                   href={item.href}
+                  prefetch={true}
                   className={cn(
                     "inline-block px-3.5 py-2 text-sm font-semibold rounded-full transition-all duration-150 whitespace-nowrap min-h-[44px] flex items-center",
                     isActive

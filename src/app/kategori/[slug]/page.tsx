@@ -1,4 +1,4 @@
-import React from "react";
+import React, { cache } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata, ResolvingMetadata } from "next";
@@ -15,18 +15,23 @@ import type { Post } from "@/lib/types";
 
 export const revalidate = 300;
 
+// Deduplicate category fetch across generateMetadata and CategoryPage
+const getCategoryBySlug = cache(async (slug: string) => {
+  const supabase = await createClient();
+  const { data: category } = await supabase
+    .from("categories")
+    .select("id, name, slug, description")
+    .eq("slug", slug)
+    .single();
+  return category;
+});
+
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> },
   _parent: ResolvingMetadata
 ): Promise<Metadata> {
   const { slug } = await params;
-  const supabase = await createClient();
-
-  const { data: category } = await supabase
-    .from("categories")
-    .select("name, slug, description")
-    .eq("slug", slug)
-    .single();
+  const category = await getCategoryBySlug(slug);
 
   if (!category) {
     return {
@@ -75,14 +80,15 @@ export default async function CategoryPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const category = await getCategoryBySlug(slug);
+
+  if (!category) {
+    notFound();
+  }
+
   const supabase = await createClient();
 
-  const { data: category } = await supabase
-    .from("categories")
-    .select("id, name, slug, description")
-    .eq("slug", slug)
-    .single();
-
+  // Query posts filtered directly by category_id on indexed column
   const { data: rawPosts } = await supabase
     .from("posts")
     .select(`
@@ -92,30 +98,31 @@ export default async function CategoryPage({
       post_tags(tag:tags(id, name, slug))
     `)
     .eq("status", "published")
-    .eq("category.slug", slug)
+    .eq("category_id", category.id)
     .order("published_at", { ascending: false });
 
-  // Filter by category slug since eq on joined column may not work in all cases
-  const posts: Post[] = (rawPosts || [])
-    .filter((p: any) => p.category?.slug === slug)
-    .map((p: any) => ({
-      id: p.id,
-      title: p.title,
-      slug: p.slug,
-      excerpt: p.excerpt || "",
-      content: "",
-      coverImage: p.cover_image_url || "",
-      authorId: p.author_id,
-      author: { id: p.author?.id || p.author_id, name: p.author?.full_name || "Penulis UNTAG", avatar: p.author?.avatar_url || null },
-      categoryId: p.category_id,
-      category: p.category || { id: "", name: "Umum", slug: "umum" },
-      tags: (p.post_tags || []).map((pt: any) => pt.tag).filter(Boolean),
-      status: "published" as const,
-      publishedAt: p.published_at,
-      createdAt: p.published_at,
-      updatedAt: p.published_at,
-      viewCount: p.view_count || 0,
-    }));
+  const posts: Post[] = (rawPosts || []).map((p: any) => ({
+    id: p.id,
+    title: p.title,
+    slug: p.slug,
+    excerpt: p.excerpt || "",
+    content: "",
+    coverImage: p.cover_image_url || "",
+    authorId: p.author_id,
+    author: {
+      id: p.author?.id || p.author_id,
+      name: p.author?.full_name || "Penulis UNTAG",
+      avatar: p.author?.avatar_url || null,
+    },
+    categoryId: p.category_id,
+    category: p.category || { id: category.id, name: category.name, slug: category.slug },
+    tags: (p.post_tags || []).map((pt: any) => pt.tag).filter(Boolean),
+    status: "published" as const,
+    publishedAt: p.published_at,
+    createdAt: p.published_at,
+    updatedAt: p.published_at,
+    viewCount: p.view_count || 0,
+  }));
 
   return (
     <div className="flex-1 flex flex-col min-h-screen">
