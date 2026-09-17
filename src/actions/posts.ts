@@ -271,32 +271,38 @@ export async function submitForReview(postId: string) {
     .single();
 
   const authorName = profile?.full_name || user.user_metadata?.full_name || user.email || 'Penulis Mahasiswa';
+  const authorEmail = user.email || user.user_metadata?.email;
   const categoryName = (post.category as any)?.name;
 
-  // Kirim email notifikasi ke redaksi & konfirmasi ke penulis
+  // Kirim email notifikasi ke redaksi & konfirmasi ke penulis secara paralel
   try {
-    await sendNewSubmissionEmailToAdmin({
-      postTitle: post.title,
-      authorName,
-      categoryName,
-      postId,
-    });
-  } catch (emailErr) {
-    console.error('[EMAIL] Gagal memanggil sendNewSubmissionEmailToAdmin:', emailErr);
-  }
-
-  if (user.email) {
-    try {
-      await sendSubmissionReceivedEmailToAuthor({
-        authorEmail: user.email,
-        authorName,
+    const emailPromises: Promise<any>[] = [
+      sendNewSubmissionEmailToAdmin({
         postTitle: post.title,
-        postId,
+        authorName,
         categoryName,
-      });
-    } catch (emailErr) {
-      console.error('[EMAIL] Gagal memanggil sendSubmissionReceivedEmailToAuthor:', emailErr);
+        postId,
+      }),
+    ];
+
+    if (authorEmail) {
+      emailPromises.push(
+        sendSubmissionReceivedEmailToAuthor({
+          authorEmail,
+          authorName,
+          postTitle: post.title,
+          postId,
+          categoryName,
+        })
+      );
+    } else {
+      console.warn('[EMAIL] Tidak ada email terdeteksi untuk penulis ID:', user.id);
     }
+
+    const emailResults = await Promise.allSettled(emailPromises);
+    console.log('[EMAIL] Status pengiriman email pengajuan naskah:', emailResults);
+  } catch (emailErr) {
+    console.error('[EMAIL] Gagal dalam proses pengiriman email pengajuan:', emailErr);
   }
 
   revalidatePath('/author');
@@ -371,13 +377,19 @@ export async function approvePost(postId: string) {
         .eq('id', post.author_id)
         .single();
 
-      if (authorUser?.user?.email) {
-        await sendPostApprovedEmailToAuthor({
-          authorEmail: authorUser.user.email,
-          authorName: authorProfile?.full_name || authorUser.user.user_metadata?.full_name || 'Penulis',
+      const authorEmail = authorUser?.user?.email || authorUser?.user?.user_metadata?.email;
+      const authorName = authorProfile?.full_name || authorUser?.user?.user_metadata?.full_name || 'Penulis';
+
+      if (authorEmail) {
+        const sendResult = await sendPostApprovedEmailToAuthor({
+          authorEmail,
+          authorName,
           postTitle: post.title,
           postSlug: post.slug,
         });
+        console.log('[EMAIL] Hasil pengiriman email persetujuan naskah:', sendResult);
+      } else {
+        console.warn('[EMAIL] Tidak ditemukan email untuk author_id:', post.author_id);
       }
     } catch (emailErr) {
       console.error('[EMAIL] Gagal memanggil sendPostApprovedEmailToAuthor:', emailErr);
@@ -458,14 +470,20 @@ export async function rejectPost(postId: string, note: string) {
         .eq('id', post.author_id)
         .single();
 
-      if (authorUser?.user?.email) {
-        await sendPostRejectedEmailToAuthor({
-          authorEmail: authorUser.user.email,
-          authorName: authorProfile?.full_name || authorUser.user.user_metadata?.full_name || 'Penulis',
+      const authorEmail = authorUser?.user?.email || authorUser?.user?.user_metadata?.email;
+      const authorName = authorProfile?.full_name || authorUser?.user?.user_metadata?.full_name || 'Penulis';
+
+      if (authorEmail) {
+        const sendResult = await sendPostRejectedEmailToAuthor({
+          authorEmail,
+          authorName,
           postTitle: post.title,
           postId: post.id,
           note: note.trim(),
         });
+        console.log('[EMAIL] Hasil pengiriman email revisi naskah:', sendResult);
+      } else {
+        console.warn('[EMAIL] Tidak ditemukan email untuk author_id:', post.author_id);
       }
     } catch (emailErr) {
       console.error('[EMAIL] Gagal memanggil sendPostRejectedEmailToAuthor:', emailErr);

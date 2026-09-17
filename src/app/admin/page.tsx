@@ -10,6 +10,7 @@ import { BadgeStatus } from "@/components/ui/badge-status";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { formatDate } from "@/lib/utils";
+import { EmailDiagnosticCard } from "@/components/admin/email-diagnostic-card";
 import {
   Inbox,
   CheckCircle2,
@@ -142,6 +143,9 @@ export default function AdminReviewQueuePage() {
           </p>
         </div>
       </div>
+
+      {/* Email Diagnostics & Live Testing */}
+      <EmailDiagnosticCard />
 
       {/* Pending Queue Table */}
       <div className="bg-white rounded-2xl border border-[#E5E7EB] shadow-xs overflow-hidden">
