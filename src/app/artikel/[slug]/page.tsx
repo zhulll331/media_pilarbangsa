@@ -54,7 +54,7 @@ export async function generateMetadata(
     "Baca karya dan tulisan selengkapnya di Portal Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa.";
 
   const rawCover = p.cover_image_url;
-  let coverImage = "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200";
+  let coverImage = `${siteUrl}/images/og-pilar-bangsa.png`;
 
   if (rawCover && !rawCover.startsWith("blob:")) {
     if (rawCover.startsWith("http://") || rawCover.startsWith("https://")) {
@@ -132,7 +132,7 @@ export default async function ArticleDetailPage({
 
   const postCoverImage =
     !p.cover_image_url || p.cover_image_url.startsWith("blob:")
-      ? "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200"
+      ? "/images/og-pilar-bangsa.png"
       : p.cover_image_url;
 
   const post: Post = {

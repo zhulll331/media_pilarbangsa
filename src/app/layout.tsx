@@ -36,10 +36,10 @@ export const metadata: Metadata = {
     siteName: "Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa",
     images: [
       {
-        url: "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200",
+        url: "/images/og-pilar-bangsa.png",
         width: 1200,
         height: 630,
-        alt: "Pilar Bangsa — Media Karya Mahasiswa UNTAG Banyuwangi",
+        alt: "Pilar Bangsa — Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa",
       },
     ],
   },
@@ -48,7 +48,7 @@ export const metadata: Metadata = {
     title: "Pilar Bangsa — Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa",
     description:
       "Wadah aspirasi kreatif, nalar kritis, dan publikasi karya terbuka seluruh mahasiswa Universitas 17 Agustus 1945 Banyuwangi.",
-    images: ["https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200"],
+    images: ["/images/og-pilar-bangsa.png"],
     site: "@ukmpilarbangsa",
   },
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.mediapilarbangsa.web.id"),

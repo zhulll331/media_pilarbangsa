@@ -55,7 +55,7 @@ export default async function AuthorProfilePage({
       slug: p.slug,
       excerpt: p.excerpt || "",
       content: p.content || "",
-      coverImage: p.cover_image_url || "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200",
+      coverImage: p.cover_image_url || "/images/og-pilar-bangsa.png",
       authorId: authorProfile.id,
       author: {
         id: authorProfile.id,

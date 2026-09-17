@@ -111,7 +111,7 @@ export function HeroSection({ featuredPost, featuredPosts, popularPosts }: HeroS
                   >
                     {/* Background Cover Image with subtle scale */}
                     <img
-                      src={post.coverImage || "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200"}
+                      src={post.coverImage || "/images/og-pilar-bangsa.png"}
                       alt={post.title}
                       className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105 opacity-80"
                     />

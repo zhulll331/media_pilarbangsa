@@ -57,7 +57,7 @@ export async function generateMetadata(
       locale: "id_ID",
       images: [
         {
-          url: "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200",
+          url: "/images/og-pilar-bangsa.png",
           width: 1200,
           height: 630,
           alt: title,
@@ -68,7 +68,7 @@ export async function generateMetadata(
       card: "summary_large_image",
       title,
       description,
-      images: ["https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200"],
+      images: ["/images/og-pilar-bangsa.png"],
       site: "@ukmpilarbangsa",
     },
   };
