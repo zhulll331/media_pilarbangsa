@@ -60,6 +60,11 @@ export const metadata: Metadata = {
     shortcut: "/images/logo_pilar.svg",
     apple: "/images/logo_pilar.svg",
   },
+  alternates: {
+    types: {
+      "application/rss+xml": "/feed.xml",
+    },
+  },
 };
 
 export default function RootLayout({

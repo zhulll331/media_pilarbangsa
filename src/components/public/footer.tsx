@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { Rss, Mail, MapPin, ArrowUpRight } from "lucide-react";
+import { Mail, MapPin, ArrowUpRight } from "lucide-react";
 import { InstagramIcon } from "@/components/ui/social-icons";
 
 export function Footer() {
@@ -131,31 +131,23 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Col 5: Sindikasi & Afiliasi */}
+          {/* Col 5: Media Sosial & Saluran */}
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wider text-white mb-4">
-              Sindikasi & Afiliasi
+              Media Sosial & Saluran
             </h4>
-            <p className="text-xs text-gray-300 leading-relaxed mb-4">
-              Portal berita ini terindeks secara berkala dan menyediakan saluran sindikasi konten terbuka untuk civitas akademika.
+            <p className="text-xs text-gray-300 leading-relaxed mb-5">
+              Ikuti publikasi karya terbaru, warta aktual kampus, dan dokumentasi kegiatan civitas akademika UNTAG Banyuwangi.
             </p>
 
-            <Link
-              href="/feed.xml"
-              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white text-xs font-medium transition-colors mb-4"
-            >
-              <Rss className="w-3.5 h-3.5 text-amber-400" />
-              <span>RSS Feed (/feed.xml)</span>
-            </Link>
-
-            <div className="pt-2">
-              <span className="text-xs font-semibold text-white block mb-2">Media Sosial Resmi:</span>
+            <div>
+              <span className="text-xs font-semibold text-white block mb-3">Saluran Resmi:</span>
               <div className="flex items-center gap-2.5 text-gray-300">
                 <a 
                   href="https://www.instagram.com/ukmpilarbangsa?igsh=MWxtOHlhaGlrczNl" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="p-2 rounded-full bg-white/5 hover:bg-[#E1306C] hover:text-white transition-colors" 
+                  className="p-2.5 rounded-full bg-white/5 hover:bg-[#E1306C] hover:text-white transition-colors" 
                   aria-label="Instagram UKM Pilar Bangsa"
                   title="Instagram @ukmpilarbangsa"
                 >
@@ -163,7 +155,7 @@ export function Footer() {
                 </a>
                 <a 
                   href="mailto:ukmpilarbangsa@gmail.com" 
-                  className="p-2 rounded-full bg-white/5 hover:bg-[#005AE0] hover:text-white transition-colors" 
+                  className="p-2.5 rounded-full bg-white/5 hover:bg-[#005AE0] hover:text-white transition-colors" 
                   aria-label="Email Redaksi Pilar Bangsa"
                   title="Email ukmpilarbangsa@gmail.com"
                 >
@@ -173,7 +165,7 @@ export function Footer() {
                   href="https://maps.app.goo.gl/Kqw7VtiUXvSuqFFS6" 
                   target="_blank" 
                   rel="noopener noreferrer" 
-                  className="p-2 rounded-full bg-white/5 hover:bg-red-500 hover:text-white transition-colors" 
+                  className="p-2.5 rounded-full bg-white/5 hover:bg-red-500 hover:text-white transition-colors" 
                   aria-label="Lokasi Sekretariat Google Maps"
                   title="Buka di Google Maps"
                 >
