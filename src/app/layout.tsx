@@ -33,6 +33,10 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
   },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://www.mediapilarbangsa.web.id"),
+  verification: {
+    google: "google737d3932879d34b0",
+  },
   icons: {
     icon: "/images/logo_pilar.svg",
     shortcut: "/images/logo_pilar.svg",
