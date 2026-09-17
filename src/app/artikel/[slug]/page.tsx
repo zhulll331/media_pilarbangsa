@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata, ResolvingMetadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { TopUtilityBar } from "@/components/public/top-utility-bar";
 import { Header } from "@/components/public/header";
@@ -18,6 +19,84 @@ import { ChevronRight, Clock, Eye, Calendar } from "lucide-react";
 import type { Post } from "@/lib/types";
 
 export const revalidate = 60;
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> },
+  _parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+
+  const { data: rawPost } = await supabase
+    .from("posts")
+    .select(`
+      id, title, slug, excerpt, cover_image_url, published_at, updated_at,
+      author:profiles(full_name),
+      category:categories(name)
+    `)
+    .eq("slug", slug)
+    .single();
+
+  if (!rawPost) {
+    return {
+      title: "Artikel Tidak Ditemukan — Pilar Bangsa",
+    };
+  }
+
+  const p = rawPost as any;
+  const authorData = Array.isArray(p.author) ? p.author[0] : p.author;
+  const authorName = authorData?.full_name || "Redaksi Pilar Bangsa";
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mediapilarbangsa.web.id";
+  const articleUrl = `${siteUrl}/artikel/${p.slug}`;
+  const title = p.title;
+  const description =
+    p.excerpt ||
+    "Baca karya dan tulisan selengkapnya di Portal Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa.";
+
+  const rawCover = p.cover_image_url;
+  let coverImage = "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200";
+
+  if (rawCover && !rawCover.startsWith("blob:")) {
+    if (rawCover.startsWith("http://") || rawCover.startsWith("https://")) {
+      coverImage = rawCover;
+    } else {
+      coverImage = `${siteUrl}${rawCover.startsWith("/") ? "" : "/"}${rawCover}`;
+    }
+  }
+
+  return {
+    title: `${title} — Pilar Bangsa`,
+    description,
+    authors: [{ name: authorName }],
+    openGraph: {
+      title,
+      description,
+      url: articleUrl,
+      siteName: "Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa",
+      type: "article",
+      publishedTime: p.published_at || p.created_at,
+      modifiedTime: p.updated_at || p.published_at,
+      authors: [authorName],
+      locale: "id_ID",
+      images: [
+        {
+          url: coverImage,
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [coverImage],
+      site: "@ukmpilarbangsa",
+      creator: authorName,
+    },
+  };
+}
 
 export default async function ArticleDetailPage({
   params,

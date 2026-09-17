@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import type { Metadata, ResolvingMetadata } from "next";
 import { createClient } from "@/lib/supabase/server";
 import { TopUtilityBar } from "@/components/public/top-utility-bar";
 import { Header } from "@/components/public/header";
@@ -13,6 +14,60 @@ import { ChevronRight, Eye, Layers } from "lucide-react";
 import type { Post } from "@/lib/types";
 
 export const revalidate = 300;
+
+export async function generateMetadata(
+  { params }: { params: Promise<{ slug: string }> },
+  _parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { slug } = await params;
+  const supabase = await createClient();
+
+  const { data: category } = await supabase
+    .from("categories")
+    .select("name, slug, description")
+    .eq("slug", slug)
+    .single();
+
+  if (!category) {
+    return {
+      title: "Kategori Tidak Ditemukan — Pilar Bangsa",
+    };
+  }
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://www.mediapilarbangsa.web.id";
+  const title = `Rubrik ${category.name} — Pilar Bangsa`;
+  const description =
+    category.description ||
+    `Kumpulan artikel, opini, dan karya literasi mahasiswa UNTAG Banyuwangi dalam rubrik ${category.name}.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      url: `${siteUrl}/kategori/${category.slug}`,
+      siteName: "Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa",
+      type: "website",
+      locale: "id_ID",
+      images: [
+        {
+          url: "https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200",
+          width: 1200,
+          height: 630,
+          alt: title,
+        },
+      ],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: ["https://images.unsplash.com/photo-1541829070764-84a7d30dd3f3?q=80&w=1200"],
+      site: "@ukmpilarbangsa",
+    },
+  };
+}
 
 export default async function CategoryPage({
   params,
