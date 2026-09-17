@@ -48,9 +48,9 @@ export function Navbar() {
           })}
         </ul>
 
-        <div className="hidden lg:flex items-center gap-2 text-xs font-semibold text-[#DC2626] uppercase tracking-wider shrink-0 pl-4">
-          <Flame className="w-4 h-4 fill-[#DC2626]" />
-          <span>Edisi Khusus Lustrum Pilar Bangsa</span>
+        <div className="hidden lg:flex items-center gap-2 text-xs font-semibold text-[#005AE0] uppercase tracking-wider shrink-0 pl-4">
+          <Flame className="w-4 h-4 fill-[#005AE0] text-[#005AE0]" />
+          <span>Portal Literasi & Nalar Kritis Mahasiswa</span>
         </div>
       </div>
     </nav>
