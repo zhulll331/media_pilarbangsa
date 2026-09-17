@@ -72,9 +72,9 @@ export default async function HomePage() {
     count: publishedPosts.filter((p) => p.categoryId === c.id).length,
   }));
 
-  const featuredPost = publishedPosts[0];
+  const featuredPosts = publishedPosts.slice(0, 5);
   const popularPosts = [...publishedPosts].sort((a, b) => b.viewCount - a.viewCount);
-  const editorChoicePosts = publishedPosts.filter((p) => featuredPost && p.id !== featuredPost.id);
+  const editorChoicePosts = publishedPosts.filter((p) => p.id !== publishedPosts[0]?.id);
 
   const trendingItem = popularPosts[0]
     ? { title: popularPosts[0].title, slug: popularPosts[0].slug }
@@ -87,8 +87,8 @@ export default async function HomePage() {
       <Navbar />
 
       <main className="flex-1">
-        {featuredPost && (
-          <HeroSection featuredPost={featuredPost} popularPosts={popularPosts} />
+        {featuredPosts.length > 0 && (
+          <HeroSection featuredPosts={featuredPosts} popularPosts={popularPosts} />
         )}
         <BentoGrid posts={editorChoicePosts} />
         <CategoryFeed categories={categories} posts={publishedPosts} />
