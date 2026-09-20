@@ -125,7 +125,7 @@ export function Footer() {
               </li>
               <li>
                 <Link href="/login" className="hover:text-white transition-colors">
-                  Portal Author & Admin
+                  Ruang Penulis Mahasiswa
                 </Link>
               </li>
             </ul>
@@ -179,12 +179,8 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-300">
           <p>© 2026 Media Karya Mahasiswa UNTAG Banyuwangi & UKM Pilar Bangsa. Hak Cipta Dilindungi.</p>
-          <div className="flex items-center gap-4">
-            <span>Wadah karya & aspirasi terbuka seluruh mahasiswa</span>
-            <span>•</span>
-            <Link href="/admin" className="text-gray-300 hover:text-white underline">
-              Tim Editorial & Redaksi
-            </Link>
+          <div className="flex items-center gap-2">
+            <span>Wadah karya & aspirasi terbuka seluruh mahasiswa UNTAG Banyuwangi</span>
           </div>
         </div>
       </div>

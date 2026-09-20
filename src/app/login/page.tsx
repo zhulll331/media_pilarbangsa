@@ -115,19 +115,10 @@ export default function LoginPage() {
             </button>
           </div>
 
-          <div className="mt-8 pt-6 border-t border-[#F1F5F9] text-center space-y-3">
+          <div className="mt-8 pt-6 border-t border-[#F1F5F9] text-center">
             <p className="text-xs text-[#94A3B8]">
               Profil penulis akan otomatis dibuat setelah Anda masuk untuk pertama kali.
             </p>
-            <div>
-              <Link
-                href="/admin/login"
-                className="inline-flex items-center gap-1.5 text-xs text-[#64748B] hover:text-[#0F172A] transition-colors"
-              >
-                <Shield className="w-3.5 h-3.5 text-gray-400" />
-                <span>Panel Pengelola Redaksi &raquo;</span>
-              </Link>
-            </div>
           </div>
         </div>
       </div>
