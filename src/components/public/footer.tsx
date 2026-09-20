@@ -108,11 +108,6 @@ export function Footer() {
                 </Link>
               </li>
               <li>
-                <Link href="/redaksi" className="hover:text-white transition-colors">
-                  Susunan Redaksi 2026
-                </Link>
-              </li>
-              <li>
                 <Link href="/pedoman-media-siber" className="hover:text-white transition-colors">
                   Kode Etik & Pedoman
                 </Link>
