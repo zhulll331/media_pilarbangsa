@@ -50,7 +50,7 @@ export function BentoGrid({ posts }: BentoGridProps) {
             />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0B172A] via-[#0B172A]/60 to-transparent" />
 
-            <div className="relative z-10 flex flex-col gap-2.5">
+            <div className="relative z-10 flex flex-col items-start gap-2.5">
               <CategoryBadge>{lead.category.name}</CategoryBadge>
               <h3 className="text-xl sm:text-2xl font-bold text-white group-hover:text-blue-300 transition-colors leading-snug">
                 {lead.title}

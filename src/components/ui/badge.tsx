@@ -10,7 +10,7 @@ export function CategoryBadge({ className, children, ...props }: BadgeProps) {
   return (
     <span
       className={cn(
-        "inline-flex items-center text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#005AE0] text-white shadow-xs",
+        "inline-flex items-center w-fit self-start text-[11px] font-semibold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#005AE0] text-white shadow-xs",
         className
       )}
       {...props}
